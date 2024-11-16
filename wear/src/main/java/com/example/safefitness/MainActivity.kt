@@ -8,8 +8,8 @@ import com.example.safefitness.databinding.ActivityMainBinding
 class MainActivity : Activity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var sensorManagerHelper: SensorManagerHelper
-    private lateinit var dataSender: DataSender
     private lateinit var permissionManager: PermissionManager
+    private lateinit var dataSender: DataSender
 
     private var startTime: Long = 0
     private var endTime: Long = 0
@@ -20,15 +20,15 @@ class MainActivity : Activity() {
         setContentView(binding.root)
 
         sensorManagerHelper = SensorManagerHelper(this)
-        dataSender = DataSender(this)
         permissionManager = PermissionManager(this)
+        dataSender = DataSender(this)
 
         sensorManagerHelper.onHeartRateChanged = { heartRate ->
-            binding.heartText.text = heartRate.toString()
+            binding.heartText.text = "${heartRate.toInt()} bpm"
             dataSender.sendData("heartRate", heartRate)
         }
         sensorManagerHelper.onStepCountChanged = { steps ->
-            binding.stepsText.text = steps.toString()
+            binding.stepsText.text = "$steps steps"
             dataSender.sendData("steps", steps.toFloat())
         }
 
@@ -40,6 +40,7 @@ class MainActivity : Activity() {
             binding.btnStop.isEnabled = true
             binding.btnStart.isEnabled = false
         }
+
         binding.btnStop.setOnClickListener {
             sensorManagerHelper.stopListening()
             binding.btnStop.isEnabled = false
@@ -48,7 +49,6 @@ class MainActivity : Activity() {
             endTime = System.currentTimeMillis()
             val durationMinutes = (endTime - startTime) / (1000 * 60)
             Log.d("MainActivity", "Training duration: $durationMinutes minutes")
-            dataSender.sendData("minutes", durationMinutes.toFloat())
         }
     }
 }

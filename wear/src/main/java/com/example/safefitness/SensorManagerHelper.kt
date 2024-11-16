@@ -42,7 +42,7 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                     if (initialSteps == null) {
                         initialSteps = currentSteps
                     }
-                    
+
                     val todaySteps = currentSteps - (initialSteps ?: 0)
                     val addedSteps = todaySteps - totalStepsForDay
 

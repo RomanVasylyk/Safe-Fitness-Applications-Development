@@ -3,6 +3,7 @@ package com.example.safefitness
 import android.app.Activity
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import com.example.safefitness.databinding.ActivityMainBinding
 
 class MainActivity : Activity() {
@@ -10,6 +11,7 @@ class MainActivity : Activity() {
     private lateinit var sensorManagerHelper: SensorManagerHelper
     private lateinit var permissionManager: PermissionManager
     private lateinit var dataSender: DataSender
+    private lateinit var fitnessDatabaseHelper: FitnessDatabaseHelper
 
     private var startTime: Long = 0
     private var endTime: Long = 0
@@ -22,6 +24,7 @@ class MainActivity : Activity() {
         sensorManagerHelper = SensorManagerHelper(this)
         permissionManager = PermissionManager(this)
         dataSender = DataSender(this)
+        fitnessDatabaseHelper = FitnessDatabaseHelper(this)
 
         sensorManagerHelper.onHeartRateChanged = { heartRate ->
             binding.heartText.text = "${heartRate.toInt()} bpm"
@@ -35,6 +38,8 @@ class MainActivity : Activity() {
         permissionManager.requestPermissions()
 
         binding.btnStart.setOnClickListener {
+            dataSender.sendAllDataToPhone(fitnessDatabaseHelper)
+            Toast.makeText(this, "Data syncing started", Toast.LENGTH_SHORT).show()
             sensorManagerHelper.startListening()
             startTime = System.currentTimeMillis()
             binding.btnStop.isEnabled = true

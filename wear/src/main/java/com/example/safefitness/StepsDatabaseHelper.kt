@@ -12,7 +12,7 @@ class FitnessDatabaseHelper(context: Context) :
 
     companion object {
         private const val DATABASE_NAME = "fitness.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 5
         const val TABLE_FITNESS = "fitness_data"
         const val COLUMN_ID = "_id"
         const val COLUMN_DATE = "date"
@@ -41,7 +41,7 @@ class FitnessDatabaseHelper(context: Context) :
         deleteOldData()
 
         val db = writableDatabase
-        val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+        val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
         val contentValues = ContentValues().apply {
             put(COLUMN_DATE, currentTime)
             steps?.let { put(COLUMN_STEPS, it) }
@@ -55,7 +55,7 @@ class FitnessDatabaseHelper(context: Context) :
         val sevenDaysAgo = Calendar.getInstance().apply {
             add(Calendar.DAY_OF_YEAR, -7)
         }.time
-        val formattedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(sevenDaysAgo)
+        val formattedDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(sevenDaysAgo)
 
         db.delete(TABLE_FITNESS, "$COLUMN_DATE < ?", arrayOf(formattedDate))
     }
@@ -98,5 +98,33 @@ class FitnessDatabaseHelper(context: Context) :
         }
         cursor.close()
         return averageHeartRate
+    }
+
+    fun getAllData(): List<Map<String, Any?>> {
+        val db = readableDatabase
+        val cursor = db.query(
+            TABLE_FITNESS,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "$COLUMN_DATE ASC"
+        )
+        val dataList = mutableListOf<Map<String, Any?>>()
+        while (cursor.moveToNext()) {
+            val date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DATE))
+            val steps = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_STEPS))
+            val heartRate = cursor.getFloat(cursor.getColumnIndexOrThrow(COLUMN_HEART_RATE))
+            dataList.add(
+                mapOf(
+                    COLUMN_DATE to date,
+                    COLUMN_STEPS to steps,
+                    COLUMN_HEART_RATE to heartRate
+                )
+            )
+        }
+        cursor.close()
+        return dataList
     }
 }

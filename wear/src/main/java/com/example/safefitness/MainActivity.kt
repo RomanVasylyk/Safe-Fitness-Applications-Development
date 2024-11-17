@@ -42,6 +42,14 @@ class MainActivity : Activity() {
             binding.btnStop.isEnabled = false
             binding.btnStart.isEnabled = true
         }
+
+        sensorManagerHelper.onStepCountChanged = { updateSteps() }
+
+        sensorManagerHelper.onHeartRateChanged = { heartRate ->
+            runOnUiThread {
+                binding.heartText.text = "${heartRate.toInt()} bpm"
+            }
+        }
     }
 
     private fun startSyncingData() {
@@ -58,6 +66,13 @@ class MainActivity : Activity() {
         override fun run() {
             dataSender.sendAllDataToPhone(fitnessDatabaseHelper)
             handler.postDelayed(this, syncInterval)
+        }
+    }
+
+    private fun updateSteps() {
+        val todaySteps = fitnessDatabaseHelper.getStepsForCurrentDay()
+        runOnUiThread {
+            binding.stepsText.text = todaySteps.toString()
         }
     }
 }

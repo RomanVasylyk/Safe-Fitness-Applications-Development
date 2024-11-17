@@ -1,7 +1,6 @@
 package com.example.safefitness
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -10,45 +9,49 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
+import lecho.lib.hellocharts.model.*
+import lecho.lib.hellocharts.view.LineChartView
 import org.json.JSONArray
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
 
-    private var lastHeartRate: Float = 0f
-    private var lastSteps: Float = 0f
-
+    private lateinit var stepsGraph: LineChartView
+    private lateinit var heartRateGraph: LineChartView
+    private lateinit var totalStepsText: TextView
+    private lateinit var lastHeartRateText: TextView
     private lateinit var phoneDatabaseHelper: PhoneDatabaseHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        stepsGraph = findViewById(R.id.stepsGraph)
+        heartRateGraph = findViewById(R.id.heartRateGraph)
+        totalStepsText = findViewById(R.id.totalStepsText)
+        lastHeartRateText = findViewById(R.id.lastHeartRateText)
+
         phoneDatabaseHelper = PhoneDatabaseHelper(this)
         Wearable.getDataClient(this).addListener(this)
+
+        updateData()
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == "/data") {
                 DataMapItem.fromDataItem(event.dataItem).dataMap.apply {
-                    if (containsKey("heartRate")) {
-                        lastHeartRate = getFloat("heartRate", 0f)
-                    }
-                    if (containsKey("steps")) {
-                        lastSteps = getFloat("steps", 0f)
-                    }
-
-                    findViewById<TextView>(R.id.heartText).text = "${lastHeartRate.toInt()} bpm"
-                    findViewById<TextView>(R.id.stepsText).text = "${lastSteps.toInt()} steps"
-
                     if (containsKey("fitnessData")) {
                         val jsonData = getString("fitnessData")
                         if (jsonData != null) {
                             saveDataToDatabase(jsonData)
+                            updateData()
+
+                            val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                            Toast.makeText(this@MainActivity, "Data received at $currentTime", Toast.LENGTH_SHORT).show()
                         }
                     }
-
-                    Toast.makeText(this@MainActivity, "Data received", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -64,11 +67,62 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
                 val heartRate = if (jsonObject.isNull(PhoneDatabaseHelper.COLUMN_HEART_RATE)) null else jsonObject.getDouble(PhoneDatabaseHelper.COLUMN_HEART_RATE).toFloat()
                 phoneDatabaseHelper.insertData(date, steps, heartRate)
             }
-            Toast.makeText(this, "All data saved to database", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error saving data to database", e)
+            e.printStackTrace()
         }
     }
+
+    private fun updateData() {
+        val stepsData = phoneDatabaseHelper.getStepsForCurrentDayWithTime()
+        val heartRateData = phoneDatabaseHelper.getHeartRatesForCurrentDayWithTime()
+        val totalSteps = phoneDatabaseHelper.getStepsForCurrentDay()
+        val lastHeartRate = phoneDatabaseHelper.getLastHeartRateForCurrentDay()
+
+        totalStepsText.text = "Total Steps: $totalSteps"
+        lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate ?: "N/A"} bpm"
+
+        updateGraph(stepsGraph, stepsData, "Steps", "Time", "Steps")
+        updateGraph(heartRateGraph, heartRateData, "Heart Rate", "Time", "BPM")
+    }
+
+    private fun updateGraph(graph: LineChartView, data: List<Pair<String, Number>>, title: String, xAxisName: String, yAxisName: String) {
+        val timeLabels = data.mapIndexed { index, pair ->
+            val time = try {
+                pair.first.split(" ")[1]
+            } catch (e: Exception) {
+                "Invalid Time"
+            }
+            AxisValue(index.toFloat()).setLabel(time)
+        }
+
+        val points = data.mapIndexed { index, pair ->
+            PointValue(index.toFloat(), pair.second.toFloat())
+        }
+
+        val line = Line(points).apply {
+            color = resources.getColor(R.color.purple_200, null)
+            isCubic = true
+            setHasLabels(true)
+        }
+
+        val chartData = LineChartData(listOf(line)).apply {
+            axisXBottom = Axis().apply {
+                name = xAxisName
+                values = timeLabels
+                textColor = resources.getColor(R.color.black, null)
+                isAutoGenerated = false
+            }
+            axisYLeft = Axis().apply {
+                name = yAxisName
+                textColor = resources.getColor(R.color.black, null)
+            }
+        }
+
+        graph.lineChartData = chartData
+    }
+
+
+
 
     override fun onStart() {
         super.onStart()

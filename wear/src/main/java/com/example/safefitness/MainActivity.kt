@@ -2,7 +2,8 @@ package com.example.safefitness
 
 import android.app.Activity
 import android.os.Bundle
-import android.util.Log
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import com.example.safefitness.databinding.ActivityMainBinding
 
@@ -12,9 +13,9 @@ class MainActivity : Activity() {
     private lateinit var permissionManager: PermissionManager
     private lateinit var dataSender: DataSender
     private lateinit var fitnessDatabaseHelper: FitnessDatabaseHelper
+    private val handler = Handler(Looper.getMainLooper())
 
-    private var startTime: Long = 0
-    private var endTime: Long = 0
+    private val syncInterval = 5_000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,34 +27,37 @@ class MainActivity : Activity() {
         dataSender = DataSender(this)
         fitnessDatabaseHelper = FitnessDatabaseHelper(this)
 
-        sensorManagerHelper.onHeartRateChanged = { heartRate ->
-            binding.heartText.text = "${heartRate.toInt()} bpm"
-            dataSender.sendData("heartRate", heartRate)
-        }
-        sensorManagerHelper.onStepCountChanged = { steps ->
-            binding.stepsText.text = "$steps steps"
-            dataSender.sendData("steps", steps.toFloat())
-        }
-
         permissionManager.requestPermissions()
 
         binding.btnStart.setOnClickListener {
-            dataSender.sendAllDataToPhone(fitnessDatabaseHelper)
-            Toast.makeText(this, "Data syncing started", Toast.LENGTH_SHORT).show()
             sensorManagerHelper.startListening()
-            startTime = System.currentTimeMillis()
+            startSyncingData()
             binding.btnStop.isEnabled = true
             binding.btnStart.isEnabled = false
         }
 
         binding.btnStop.setOnClickListener {
             sensorManagerHelper.stopListening()
+            stopSyncingData()
             binding.btnStop.isEnabled = false
             binding.btnStart.isEnabled = true
+        }
+    }
 
-            endTime = System.currentTimeMillis()
-            val durationMinutes = (endTime - startTime) / (1000 * 60)
-            Log.d("MainActivity", "Training duration: $durationMinutes minutes")
+    private fun startSyncingData() {
+        handler.post(syncRunnable)
+        Toast.makeText(this, "Data syncing started", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun stopSyncingData() {
+        handler.removeCallbacks(syncRunnable)
+        Toast.makeText(this, "Data syncing stopped", Toast.LENGTH_SHORT).show()
+    }
+
+    private val syncRunnable = object : Runnable {
+        override fun run() {
+            dataSender.sendAllDataToPhone(fitnessDatabaseHelper)
+            handler.postDelayed(this, syncInterval)
         }
     }
 }

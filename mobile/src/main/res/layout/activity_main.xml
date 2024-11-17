@@ -1,43 +1,35 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center">
+    android:layout_height="match_parent">
 
-    <LinearLayout
-        android:id="@+id/linear1"
+    <TextView
+        android:id="@+id/totalStepsText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Steps:"
-            android:textSize="40sp" />
-        <TextView
-            android:id="@+id/stepsText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"
-            android:textSize="40sp" />
-    </LinearLayout>
+        android:layout_marginTop="16dp"
+        android:text="Total Steps: 0"
+        android:textSize="18sp" />
 
-    <LinearLayout
-        android:id="@+id/linearHeart"
-        android:layout_marginTop="20dp"
-        android:layout_below="@+id/linear1"
+    <TextView
+        android:id="@+id/lastHeartRateText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Heart Rate:"
-            android:textSize="40sp" />
-        <TextView
-            android:id="@+id/heartText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 bpm"
-            android:textSize="40sp" />
-    </LinearLayout>
+        android:layout_below="@id/totalStepsText"
+        android:layout_marginTop="8dp"
+        android:text="Last Heart Rate: 0 bpm"
+        android:textSize="18sp" />
+
+    <lecho.lib.hellocharts.view.LineChartView
+        android:id="@+id/stepsGraph"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/lastHeartRateText"
+        android:layout_marginTop="16dp" />
+
+    <lecho.lib.hellocharts.view.LineChartView
+        android:id="@+id/heartRateGraph"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/stepsGraph"
+        android:layout_marginTop="16dp" />
 </RelativeLayout>

@@ -33,20 +33,28 @@ android {
 }
 
 dependencies {
+
+    // HelloCharts - Library for charts (e.g., line, bar, pie)
     implementation 'com.github.lecho:hellocharts-library:1.5.8@aar'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+
+    // AndroidX Core - Provides Kotlin extensions for Android framework APIs
     implementation 'androidx.core:core-ktx:1.9.0'
+
+    // AppCompat - Backward compatibility for modern Android features
     implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    // Material Design - Components and themes for modern UIs
     implementation 'com.google.android.material:material:1.8.0'
+
+    // Google Play Services Wearable - API for communication between Wear OS and paired devices
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    // Wear App - Links the main app with the Wear OS module
     wearApp project(":wear")
-    implementation 'com.google.android.gms:play-services-fitness:21.1.0'
-    implementation 'com.google.android.gms:play-services-auth:20.4.1'
+
+    // Kotlin Coroutines - Core library for managing asynchronous programming
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
-    implementation "androidx.health.connect:connect-client:1.0.0-alpha11"
+
+    // Kotlin Coroutines for Android - Android-specific coroutine support (e.g., MainLooper)
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
 }

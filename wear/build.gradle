@@ -31,15 +31,19 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'com.google.android.gms:play-services-wearable:18.0.0'
-    implementation 'androidx.percentlayout:percentlayout:1.0.0'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.recyclerview:recyclerview:1.3.0'
-    implementation 'androidx.wear:wear:1.2.0'
-    implementation 'com.google.android.gms:play-services-fitness:21.1.0'
-    implementation 'com.google.android.gms:play-services-auth:20.4.1'
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
 
+    // AndroidX Core - Provides Kotlin extensions for Android framework APIs
+    implementation 'androidx.core:core-ktx:1.9.0'
+
+    // Google Play Services Wearable - API for communication between Wear OS and paired devices
+    implementation 'com.google.android.gms:play-services-wearable:18.0.0'
+
+    // AndroidX Wear - Wearable UI components and utilities
+    implementation 'androidx.wear:wear:1.2.0'
+
+    // Kotlin Coroutines - Core library for managing asynchronous programming
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
+
+    // Kotlin Coroutines for Android - Android-specific coroutine support (e.g., MainLooper)
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
 }

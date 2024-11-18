@@ -3,21 +3,24 @@ package com.example.safefitness
 import android.content.Context
 import android.util.Log
 import com.google.android.gms.wearable.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
 class DataSender(context: Context) {
     private val dataClient: DataClient = Wearable.getDataClient(context)
+    private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
 
-    fun sendAllDataToPhone(databaseHelper: FitnessDatabaseHelper) {
-        val dataList = databaseHelper.getAllData()
+    suspend fun sendAllDataToPhone() {
+        val dataList = withContext(Dispatchers.IO) { fitnessDao.getAllData() }
         if (dataList.isNotEmpty()) {
             val jsonArray = JSONArray()
             for (data in dataList) {
                 val jsonObject = JSONObject()
-                jsonObject.put(FitnessDatabaseHelper.COLUMN_DATE, data[FitnessDatabaseHelper.COLUMN_DATE])
-                jsonObject.put(FitnessDatabaseHelper.COLUMN_STEPS, data[FitnessDatabaseHelper.COLUMN_STEPS])
-                jsonObject.put(FitnessDatabaseHelper.COLUMN_HEART_RATE, data[FitnessDatabaseHelper.COLUMN_HEART_RATE])
+                jsonObject.put("date", data.date)
+                jsonObject.put("steps", data.steps)
+                jsonObject.put("heartRate", data.heartRate)
                 jsonArray.put(jsonObject)
             }
 

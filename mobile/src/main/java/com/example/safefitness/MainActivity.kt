@@ -1,6 +1,7 @@
 package com.example.safefitness
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -9,6 +10,9 @@ import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import lecho.lib.hellocharts.gesture.ContainerScrollType
 import lecho.lib.hellocharts.gesture.ZoomType
 import lecho.lib.hellocharts.model.*
@@ -23,7 +27,7 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
     private lateinit var heartRateGraph: LineChartView
     private lateinit var totalStepsText: TextView
     private lateinit var lastHeartRateText: TextView
-    private lateinit var phoneDatabaseHelper: PhoneDatabaseHelper
+    private lateinit var fitnessDao: FitnessDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,10 +38,15 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
         totalStepsText = findViewById(R.id.totalStepsText)
         lastHeartRateText = findViewById(R.id.lastHeartRateText)
 
-        phoneDatabaseHelper = PhoneDatabaseHelper(this)
+        val database = FitnessDatabase.getDatabase(this)
+        fitnessDao = database.fitnessDao()
+
         Wearable.getDataClient(this).addListener(this)
 
         updateData()
+
+//        clearDatabase()
+//        Toast.makeText(this, "Database cleared successfully", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -46,6 +55,8 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
                 DataMapItem.fromDataItem(event.dataItem).dataMap.apply {
                     if (containsKey("fitnessData")) {
                         val jsonData = getString("fitnessData")
+                        Log.d("DataReceiver", "Received data: $jsonData")
+
                         if (jsonData != null) {
                             saveDataToDatabase(jsonData)
                             updateData()
@@ -60,39 +71,53 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
     }
 
     private fun saveDataToDatabase(jsonData: String) {
-        try {
-            val jsonArray = JSONArray(jsonData)
-            for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
-                val date = jsonObject.getString(PhoneDatabaseHelper.COLUMN_DATE)
-                val steps = jsonObject.getInt(PhoneDatabaseHelper.COLUMN_STEPS)
-                val heartRate = if (jsonObject.isNull(PhoneDatabaseHelper.COLUMN_HEART_RATE)) null else jsonObject.getDouble(PhoneDatabaseHelper.COLUMN_HEART_RATE).toFloat()
-                phoneDatabaseHelper.insertData(date, steps, heartRate)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val jsonArray = JSONArray(jsonData)
+                for (i in 0 until jsonArray.length()) {
+                    val jsonObject = jsonArray.getJSONObject(i)
+                    val date = jsonObject.getString("date")
+                    val steps = if (jsonObject.has("steps")) jsonObject.getInt("steps") else null
+                    val heartRate = if (jsonObject.has("heartRate")) jsonObject.getDouble("heartRate").toFloat() else null
+
+                    Log.d("DatabaseSave", "Parsed data: date=$date, steps=$steps, heartRate=$heartRate")
+                    updateData()
+                    val exists = fitnessDao.dataExists(date, steps, heartRate)
+                    if (exists == 0) {
+                        fitnessDao.insertData(FitnessEntity(date = date, steps = steps, heartRate = heartRate))
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
     private fun updateData() {
-        val rawStepsData = phoneDatabaseHelper.getStepsForCurrentDayWithTime()
-        val rawHeartRateData = phoneDatabaseHelper.getHeartRatesForCurrentDayWithTime()
+        CoroutineScope(Dispatchers.IO).launch {
+            val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-        val stepsData = aggregateDataByHour(rawStepsData)
-        val heartRateData = aggregateHeartRateBy5Minutes(rawHeartRateData)
+            val stepsList = fitnessDao.getDataForCurrentDay(currentDate)
+                .mapNotNull { it.steps?.let { steps -> it.date to steps as Number } }
 
-        val totalSteps = phoneDatabaseHelper.getStepsForCurrentDay()
-        val lastHeartRate = phoneDatabaseHelper.getLastHeartRateForCurrentDay()
+            val heartRateList = fitnessDao.getDataForCurrentDay(currentDate)
+                .mapNotNull { it.heartRate?.let { heartRate -> it.date to heartRate as Number } }
 
-        totalStepsText.text = "Total Steps: $totalSteps"
-        lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate ?: "N/A"} bpm"
+            val aggregatedSteps = aggregateDataByHour(stepsList)
+            val aggregatedHeartRate = aggregateHeartRateBy5Minutes(heartRateList)
 
-        updateGraph(stepsGraph, stepsData, "Steps", "Time", "Steps")
-        updateGraph(heartRateGraph, heartRateData, "Heart Rate", "Time", "BPM")
+            val totalSteps = fitnessDao.getTotalStepsForCurrentDay(currentDate)
+            val lastHeartRate = fitnessDao.getLastHeartRateForCurrentDay(currentDate)
+
+            runOnUiThread {
+                totalStepsText.text = "Total Steps: $totalSteps"
+                lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate ?: "N/A"} bpm"
+
+                updateGraph(stepsGraph, aggregatedSteps, "Steps", "Time", "Steps")
+                updateGraph(heartRateGraph, aggregatedHeartRate, "Heart Rate", "Time", "BPM")
+            }
+        }
     }
-
-
-
 
     private fun updateGraph(
         graph: LineChartView,
@@ -202,7 +227,11 @@ class MainActivity : AppCompatActivity(), DataClient.OnDataChangedListener {
         }.sortedBy { it.first }
     }
 
-
+    private fun clearDatabase() {
+        CoroutineScope(Dispatchers.IO).launch {
+            fitnessDao.clearDatabase()
+        }
+    }
 
     override fun onStart() {
         super.onStart()

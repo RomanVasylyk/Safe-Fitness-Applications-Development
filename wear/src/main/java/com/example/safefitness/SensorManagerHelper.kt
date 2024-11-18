@@ -5,11 +5,16 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 class SensorManagerHelper(private val context: Context) : SensorEventListener {
     private val sensorManager: SensorManager =
         context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val fitnessDatabaseHelper = FitnessDatabaseHelper(context)
+    private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
 
     private var heartRateSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
     private var stepCounterSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
@@ -34,7 +39,7 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
             when (it.sensor.type) {
                 Sensor.TYPE_HEART_RATE -> {
                     val heartRate = it.values[0]
-                    fitnessDatabaseHelper.insertData(null, heartRate)
+                    saveHeartRateToDatabase(heartRate)
                     onHeartRateChanged?.invoke(heartRate)
                 }
                 Sensor.TYPE_STEP_COUNTER -> {
@@ -47,7 +52,7 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                     val addedSteps = todaySteps - totalStepsForDay
 
                     if (addedSteps > 0) {
-                        fitnessDatabaseHelper.insertData(addedSteps, null)
+                        saveStepsToDatabase(addedSteps)
                         totalStepsForDay += addedSteps
                     }
 
@@ -56,6 +61,31 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                 else -> {}
             }
         }
+    }
+
+    private fun saveStepsToDatabase(steps: Int) {
+        val currentTime = getCurrentTime()
+        CoroutineScope(Dispatchers.IO).launch {
+            val exists = fitnessDao.dataExists(currentTime, steps, null)
+            if (exists == 0) {
+                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = steps, heartRate = null))
+            }
+        }
+    }
+
+    private fun saveHeartRateToDatabase(heartRate: Float) {
+        val currentTime = getCurrentTime()
+        CoroutineScope(Dispatchers.IO).launch {
+            val exists = fitnessDao.dataExists(currentTime, null, heartRate)
+            if (exists == 0) {
+                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
+            }
+        }
+    }
+
+
+    private fun getCurrentTime(): String {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

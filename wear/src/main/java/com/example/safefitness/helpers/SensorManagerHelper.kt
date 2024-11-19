@@ -1,10 +1,12 @@
-package com.example.safefitness
+package com.example.safefitness.helpers
 
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

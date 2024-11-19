@@ -8,7 +8,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import com.example.safefitness.data.FitnessDao
+import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.databinding.ActivityMainBinding
+import com.example.safefitness.helpers.PermissionManager
+import com.example.safefitness.helpers.SensorManagerHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

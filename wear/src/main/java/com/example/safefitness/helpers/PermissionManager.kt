@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.helpers
 
 import android.app.Activity
 import android.content.pm.PackageManager

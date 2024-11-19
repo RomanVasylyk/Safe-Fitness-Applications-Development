@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.data
 
 import android.content.Context
 import androidx.room.Database

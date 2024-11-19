@@ -2,6 +2,7 @@ package com.example.safefitness
 
 import android.content.Context
 import android.util.Log
+import com.example.safefitness.data.FitnessDatabase
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

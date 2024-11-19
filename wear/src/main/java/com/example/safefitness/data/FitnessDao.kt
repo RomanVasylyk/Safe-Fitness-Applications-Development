@@ -2,11 +2,12 @@ package com.example.safefitness.data
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
 interface FitnessDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertData(fitnessEntity: FitnessEntity)
 
     @Query("DELETE FROM fitness_data WHERE date < :sevenDaysAgo")

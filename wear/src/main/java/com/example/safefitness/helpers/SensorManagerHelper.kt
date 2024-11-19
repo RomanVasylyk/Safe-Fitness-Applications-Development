@@ -9,6 +9,7 @@ import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -26,6 +27,8 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
 
     private var initialSteps: Int? = null
     private var totalStepsForDay = 0
+    private var stepBuffer = 0
+    private var isBuffering = false
 
     fun startListening() {
         heartRateSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
@@ -54,13 +57,29 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                     val addedSteps = todaySteps - totalStepsForDay
 
                     if (addedSteps > 0) {
-                        saveStepsToDatabase(addedSteps)
+                        bufferSteps(addedSteps)
                         totalStepsForDay += addedSteps
                     }
 
                     onStepCountChanged?.invoke(totalStepsForDay)
                 }
                 else -> {}
+            }
+        }
+    }
+
+    private fun bufferSteps(steps: Int) {
+        stepBuffer += steps
+
+        if (!isBuffering) {
+            isBuffering = true
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(5000)
+                if (stepBuffer > 0) {
+                    saveStepsToDatabase(stepBuffer)
+                    stepBuffer = 0
+                }
+                isBuffering = false
             }
         }
     }
@@ -75,16 +94,13 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
         }
     }
 
+
     private fun saveHeartRateToDatabase(heartRate: Float) {
         val currentTime = getCurrentTime()
         CoroutineScope(Dispatchers.IO).launch {
-            val exists = fitnessDao.dataExists(currentTime, null, heartRate)
-            if (exists == 0) {
-                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
-            }
+            fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
         }
     }
-
 
     private fun getCurrentTime(): String {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())

@@ -1,6 +1,7 @@
 package com.example.safefitness
 
 import android.content.Context
+import lecho.lib.hellocharts.formatter.SimpleAxisValueFormatter
 import lecho.lib.hellocharts.gesture.ContainerScrollType
 import lecho.lib.hellocharts.gesture.ZoomType
 import lecho.lib.hellocharts.model.*
@@ -48,6 +49,7 @@ class GraphManager {
                 textColor = context.getColor(android.R.color.black)
                 textSize = 12
                 setHasLines(true)
+                formatter = SimpleAxisValueFormatter().setDecimalDigitsNumber(0)
             }
         }
 
@@ -77,6 +79,7 @@ class GraphManager {
             currentViewport = viewport
             isInteractive = true
             zoomType = ZoomType.HORIZONTAL_AND_VERTICAL
+            isZoomEnabled = true
             setContainerScrollEnabled(true, ContainerScrollType.HORIZONTAL)
         }
     }

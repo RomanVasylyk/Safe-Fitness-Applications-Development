@@ -14,7 +14,6 @@ class FullScreenGraphActivity : AppCompatActivity() {
 
         fullScreenGraph = findViewById(R.id.fullScreenGraph)
 
-        // Отримання даних, переданих з основної активності
         val graphData = intent.getSerializableExtra("graphData") as? List<Pair<String, Number>>
         val title = intent.getStringExtra("title")
         val xAxisName = intent.getStringExtra("xAxisName")

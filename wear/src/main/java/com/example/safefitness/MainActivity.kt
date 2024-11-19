@@ -16,6 +16,7 @@ import com.example.safefitness.helpers.SensorManagerHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class MainActivity : Activity() {
     private lateinit var binding: ActivityMainBinding
@@ -38,24 +39,26 @@ class MainActivity : Activity() {
         permissionManager = PermissionManager(this)
         permissionManager.requestPermissions()
 
+        deleteOldData()
+
         binding.btnStart.setOnClickListener {
             sensorManagerHelper.startListening()
             startSyncingData()
+            startUpdatingSteps()
             binding.btnStart.isEnabled = false
             binding.btnStop.isEnabled = true
             Toast.makeText(this, "Started Tracking", Toast.LENGTH_SHORT).show()
         }
 
-
         binding.btnStop.setOnClickListener {
             sensorManagerHelper.stopListening()
             stopSyncingData()
+            stopUpdatingSteps()
             binding.btnStart.isEnabled = true
             binding.btnStop.isEnabled = false
             Toast.makeText(this, "Stopped Tracking", Toast.LENGTH_SHORT).show()
         }
 
-        sensorManagerHelper.onStepCountChanged = { updateSteps() }
         sensorManagerHelper.onHeartRateChanged = { heartRate ->
             runOnUiThread {
                 binding.heartText.text = "${heartRate.toInt()} bpm"
@@ -82,6 +85,21 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun startUpdatingSteps() {
+        handler.post(updateStepsRunnable)
+    }
+
+    private fun stopUpdatingSteps() {
+        handler.removeCallbacks(updateStepsRunnable)
+    }
+
+    private val updateStepsRunnable = object : Runnable {
+        override fun run() {
+            updateSteps()
+            handler.postDelayed(this, syncInterval)
+        }
+    }
+
     private fun updateSteps() {
         CoroutineScope(Dispatchers.IO).launch {
             val todaySteps = fitnessDao.getStepsForCurrentDay(getCurrentDate())
@@ -93,5 +111,14 @@ class MainActivity : Activity() {
 
     private fun getCurrentDate(): String {
         return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    }
+
+    private fun deleteOldData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, -7)
+            val sevenDaysAgo = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+            fitnessDao.deleteOldData(sevenDaysAgo)
+        }
     }
 }

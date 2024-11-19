@@ -56,11 +56,20 @@ class GraphManager {
         val minY = points.minOf { it.y }
         val maxY = points.maxOf { it.y }
 
-        val viewport = Viewport().apply {
-            top = maxY + (maxY - minY) * 0.1f
-            bottom = minY - (maxY - minY) * 0.1f
-            left = -0.5f
-            right = points.size.toFloat() - 1 + 1f
+        val viewport = if (points.size == 1) {
+            Viewport().apply {
+                top = maxY + 10f
+                bottom = minY - 10f
+                left = -0.5f
+                right = 1.5f
+            }
+        } else {
+            Viewport().apply {
+                top = maxY + (maxY - minY).coerceAtLeast(1f) * 0.1f
+                bottom = minY - (maxY - minY).coerceAtLeast(1f) * 0.1f
+                left = -0.5f
+                right = points.size.toFloat() - 1 + 0.5f
+            }
         }
 
         graph.apply {

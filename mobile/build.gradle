@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace 'com.example.safefitness'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.example.safefitness"
         minSdk 30
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -35,6 +35,8 @@ android {
 
 dependencies {
     implementation 'androidx.room:room-common:2.5.2'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
     def room_version = "2.5.2"
 
     implementation "androidx.room:room-runtime:$room_version"

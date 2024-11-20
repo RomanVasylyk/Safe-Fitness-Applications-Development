@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         stepsGraph.setOnClickListener {
             openFullScreenGraph(
+                dataType = "steps",
                 aggregatedData = aggregatedSteps,
                 title = "Steps",
                 xAxisName = "Time",
@@ -55,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
         heartRateGraph.setOnClickListener {
             openFullScreenGraph(
+                dataType = "heartRate",
                 aggregatedData = aggregatedHeartRate,
                 title = "Heart Rate",
                 xAxisName = "Time",
@@ -92,13 +94,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openFullScreenGraph(
+        dataType: String,
         aggregatedData: List<Pair<String, Number>>,
         title: String,
         xAxisName: String,
         yAxisName: String
     ) {
         val intent = Intent(this, FullScreenGraphActivity::class.java).apply {
-            putExtra("graphData", ArrayList(aggregatedData)) // Передаємо дані графіка
+            putExtra("graphData", ArrayList(aggregatedData))
+            putExtra("dataType", dataType)
             putExtra("title", title)
             putExtra("xAxisName", xAxisName)
             putExtra("yAxisName", yAxisName)

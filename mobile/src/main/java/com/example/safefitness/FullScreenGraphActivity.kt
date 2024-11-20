@@ -2,33 +2,29 @@ package com.example.safefitness
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import lecho.lib.hellocharts.view.LineChartView
+import androidx.viewpager.widget.ViewPager
+import com.example.safefitness.data.FitnessDatabase
 
 class FullScreenGraphActivity : AppCompatActivity() {
 
-    private lateinit var fullScreenGraph: LineChartView
+    private lateinit var viewPager: ViewPager
+    private lateinit var graphPagerAdapter: GraphPagerAdapter
+    private lateinit var dataType: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_full_screen_graph)
 
-        fullScreenGraph = findViewById(R.id.fullScreenGraph)
+        val database = FitnessDatabase.getDatabase(this)
+        val fitnessDao = database.fitnessDao()
+        val graphManager = GraphManager()
 
-        val graphData = intent.getSerializableExtra("graphData") as? List<Pair<String, Number>>
-        val title = intent.getStringExtra("title")
-        val xAxisName = intent.getStringExtra("xAxisName")
-        val yAxisName = intent.getStringExtra("yAxisName")
+        dataType = intent.getStringExtra("dataType") ?: "steps"
 
-        if (graphData != null && title != null && xAxisName != null && yAxisName != null) {
-            val graphManager = GraphManager()
-            graphManager.updateGraph(
-                fullScreenGraph,
-                graphData,
-                title,
-                xAxisName,
-                yAxisName,
-                this
-            )
-        }
+        viewPager = findViewById(R.id.graphViewPager)
+        graphPagerAdapter = GraphPagerAdapter(this, fitnessDao, graphManager, dataType)
+        viewPager.adapter = graphPagerAdapter
+
+        viewPager.currentItem = graphPagerAdapter.count - 1
     }
 }

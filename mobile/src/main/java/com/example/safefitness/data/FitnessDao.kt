@@ -29,4 +29,10 @@ interface FitnessDao {
 
     @Query("DELETE FROM fitness_data")
     suspend fun clearDatabase()
+
+    @Query("SELECT COUNT(DISTINCT date(date)) FROM fitness_data")
+    suspend fun getAvailableDaysCount(): Int
+
+    @Query("SELECT * FROM fitness_data WHERE date LIKE :specificDate || '%' ORDER BY date ASC")
+    suspend fun getDataForSpecificDay(specificDate: String): List<FitnessEntity>
 }

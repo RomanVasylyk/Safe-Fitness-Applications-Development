@@ -35,6 +35,7 @@ class GraphPagerAdapter(
         val view = inflater.inflate(R.layout.page_graph, container, false)
         val graphView = view.findViewById<LineChartView>(R.id.graphView)
         val dateText = view.findViewById<TextView>(R.id.dateText)
+        val summaryText = view.findViewById<TextView>(R.id.summaryText)
 
         val date = getDateForPosition(position)
         dateText.text = "Date: $date"
@@ -60,6 +61,16 @@ class GraphPagerAdapter(
             context = context
         )
 
+        runBlocking {
+            if (dataType == "steps") {
+                val totalSteps = fitnessDao.getTotalStepsForCurrentDay(date)
+                summaryText.text = "Steps: $totalSteps"
+            } else {
+                val lastHeartRate = fitnessDao.getLastHeartRateForCurrentDay(date)
+                summaryText.text = "Last HR: ${lastHeartRate?.toInt() ?: "N/A"}"
+            }
+        }
+
         container.addView(view)
         return view
     }
@@ -70,10 +81,9 @@ class GraphPagerAdapter(
 
     private fun getDateForPosition(position: Int): String {
         val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -(count - 1 - position)) 
+        calendar.add(Calendar.DAY_OF_YEAR, -(count - 1 - position))
         return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
     }
-
 
     private fun aggregateDataByHour(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
         val aggregatedData = mutableMapOf<String, MutableList<Number>>()

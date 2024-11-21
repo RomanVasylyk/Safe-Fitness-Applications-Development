@@ -3,9 +3,12 @@ package com.example.safefitness
 import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.safefitness.data.DataHandler
+import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessEntity
 import com.example.safefitness.data.WearDataListener
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
@@ -28,17 +31,21 @@ class MainActivity : AppCompatActivity() {
 
     private var aggregatedSteps: List<Pair<String, Number>> = listOf()
     private var aggregatedHeartRate: List<Pair<String, Number>> = listOf()
+    private lateinit var fitnessDao: FitnessDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+//        clearAllData()
+//        populateDatabaseWithHourlyRandomDataFor2024()
 
         initViews()
 
         val database = FitnessDatabase.getDatabase(this)
         dataHandler = DataHandler(database.fitnessDao())
         graphManager = GraphManager()
-
+        fitnessDao = database.fitnessDao()
         wearDataListener = WearDataListener(dataHandler) { updateData() }
         Wearable.getDataClient(this).addListener(wearDataListener)
 
@@ -114,4 +121,58 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         Wearable.getDataClient(this).removeListener(wearDataListener)
     }
+
+    private fun populateDatabaseWithHourlyRandomDataFor2024() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val fitnessDao = FitnessDatabase.getDatabase(this@MainActivity).fitnessDao()
+
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.YEAR, 2024)
+                set(Calendar.MONTH, Calendar.JANUARY)
+                set(Calendar.DAY_OF_MONTH, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+            }
+
+            val endDate = Calendar.getInstance().apply {
+                set(Calendar.YEAR, 2024)
+                set(Calendar.MONTH, Calendar.NOVEMBER)
+                set(Calendar.DAY_OF_MONTH, 21)
+                set(Calendar.HOUR_OF_DAY, 23)
+                set(Calendar.MINUTE, 59)
+                set(Calendar.SECOND, 59)
+            }
+
+            while (calendar <= endDate) {
+                val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
+
+                val randomSteps = (0..500).random()
+                val randomHeartRate = (60..180).random().toFloat()
+
+                val exists = fitnessDao.dataExists(date, randomSteps, randomHeartRate)
+                if (exists == 0) {
+                    fitnessDao.insertData(
+                        FitnessEntity(
+                            date = date,
+                            steps = randomSteps,
+                            heartRate = randomHeartRate
+                        )
+                    )
+                }
+
+                calendar.add(Calendar.HOUR_OF_DAY, 1)
+            }
+        }
+    }
+
+    private fun clearAllData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            fitnessDao.clearDatabase()
+            runOnUiThread {
+                Toast.makeText(this@MainActivity, "All data has been cleared!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
 }

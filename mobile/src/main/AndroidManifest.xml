@@ -17,7 +17,9 @@
         <activity
             android:name=".FullScreenGraphActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar"
-            android:exported="false" />
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:screenOrientation="unspecified"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">

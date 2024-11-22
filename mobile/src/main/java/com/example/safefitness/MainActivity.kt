@@ -52,23 +52,11 @@ class MainActivity : AppCompatActivity() {
         updateData()
 
         stepsGraph.setOnClickListener {
-            openFullScreenGraph(
-                dataType = "steps",
-                aggregatedData = aggregatedSteps,
-                title = "Steps",
-                xAxisName = "Time",
-                yAxisName = "Steps"
-            )
+            FullScreenGraphActivity.start(this, "steps")
         }
 
         heartRateGraph.setOnClickListener {
-            openFullScreenGraph(
-                dataType = "heartRate",
-                aggregatedData = aggregatedHeartRate,
-                title = "Heart Rate",
-                xAxisName = "Time",
-                yAxisName = "BPM"
-            )
+            FullScreenGraphActivity.start(this, "heartRate")
         }
     }
 
@@ -138,7 +126,7 @@ class MainActivity : AppCompatActivity() {
             val endDate = Calendar.getInstance().apply {
                 set(Calendar.YEAR, 2024)
                 set(Calendar.MONTH, Calendar.NOVEMBER)
-                set(Calendar.DAY_OF_MONTH, 21)
+                set(Calendar.DAY_OF_MONTH, 22)
                 set(Calendar.HOUR_OF_DAY, 23)
                 set(Calendar.MINUTE, 59)
                 set(Calendar.SECOND, 59)
@@ -147,8 +135,8 @@ class MainActivity : AppCompatActivity() {
             while (calendar <= endDate) {
                 val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
 
-                val randomSteps = (0..500).random()
-                val randomHeartRate = (60..180).random().toFloat()
+                val randomSteps = (0..1000).random()
+                val randomHeartRate = (60..190).random().toFloat()
 
                 val exists = fitnessDao.dataExists(date, randomSteps, randomHeartRate)
                 if (exists == 0) {
@@ -168,7 +156,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun clearAllData() {
         CoroutineScope(Dispatchers.IO).launch {
-            fitnessDao.clearDatabase()
+            val dao = FitnessDatabase.getDatabase(this@MainActivity).fitnessDao()
+            dao.clearDatabase()
             runOnUiThread {
                 Toast.makeText(this@MainActivity, "All data has been cleared!", Toast.LENGTH_SHORT).show()
             }

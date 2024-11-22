@@ -35,4 +35,9 @@ interface FitnessDao {
 
     @Query("SELECT * FROM fitness_data WHERE date LIKE :specificDate || '%' ORDER BY date ASC")
     suspend fun getDataForSpecificDay(specificDate: String): List<FitnessEntity>
+
+    @Query("SELECT AVG(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
+    suspend fun getAverageHeartRateForCurrentDay(currentDate: String): Float
+
+
 }

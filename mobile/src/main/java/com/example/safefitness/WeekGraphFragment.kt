@@ -4,22 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.WeekGraphDataProcessor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import lecho.lib.hellocharts.model.*
-import lecho.lib.hellocharts.view.ColumnChartView
+import kotlinx.coroutines.runBlocking
+import java.text.SimpleDateFormat
+import java.util.*
 
 class WeekGraphFragment : Fragment() {
 
-    private lateinit var graphView: ColumnChartView
-    private lateinit var summaryText: TextView
-    private lateinit var dateRangeText: TextView
-    private lateinit var dataProcessor: WeekGraphDataProcessor
+    private lateinit var viewPager: ViewPager2
+    private lateinit var adapter: WeekGraphPagerAdapter
     private var dataType: String = "steps"
 
     override fun onCreateView(
@@ -28,84 +23,35 @@ class WeekGraphFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_week_graph, container, false)
 
-        graphView = view.findViewById(R.id.columnChartView)
-        summaryText = view.findViewById(R.id.weekGraphSummaryText)
-        dateRangeText = view.findViewById(R.id.weekGraphDateRangeText)
+        viewPager = view.findViewById(R.id.weekGraphPager)
 
         val database = FitnessDatabase.getDatabase(requireContext())
-        dataProcessor = WeekGraphDataProcessor(database.fitnessDao())
 
         dataType = arguments?.getString("dataType") ?: "steps"
 
-        loadWeekData()
+        val (totalWeeks, currentWeekPosition) = runBlocking { getTotalWeeksCount(database) }
+        adapter = WeekGraphPagerAdapter(this, database, totalWeeks, dataType)
+        viewPager.adapter = adapter
+
+        viewPager.setCurrentItem(currentWeekPosition, false)
+
         return view
     }
 
-    private fun loadWeekData() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val weekData = dataProcessor.getWeeklyData(dataType)
+    private suspend fun getTotalWeeksCount(database: FitnessDatabase): Pair<Int, Int> {
+        val firstEntryDateString = database.fitnessDao().getFirstEntryDate() ?: return Pair(1, 0)
+        val firstEntryDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(firstEntryDateString) ?: return Pair(1, 0)
 
-            summaryText.text = weekData.summaryText
-            dateRangeText.text = weekData.dateRange
+        val calendar = Calendar.getInstance()
+        calendar.firstDayOfWeek = Calendar.MONDAY
 
-            if (dataType == "steps") {
-                val stepData = weekData.aggregatedData.map { it as Pair<String, Number> }
-                updateGraph(stepData)
-            } else if (dataType == "heartRate") {
-                val pulseData = weekData.aggregatedData.map { it as WeekGraphDataProcessor.DayPulseData }
-                updateGraph(pulseData)
-            }
-        }
-    }
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        val currentMonday = calendar.time
 
+        val diffInMillis = currentMonday.time - firstEntryDate.time
+        val totalWeeks = (diffInMillis / (1000 * 60 * 60 * 24 * 7)).toInt() + 1
 
-    private fun updateGraph(data: List<Any>) {
-        if (dataType == "steps") {
-            val columns = data.mapIndexed { index, item ->
-                val steps = item as Pair<String, Number>
-                val subcolumn = SubcolumnValue(steps.second.toFloat(), resources.getColor(android.R.color.holo_blue_light, null))
-                Column(listOf(subcolumn)).apply { setHasLabels(true) }
-            }
-
-            val columnChartData = ColumnChartData(columns).apply {
-                axisXBottom = Axis(data.mapIndexed { index, item ->
-                    val steps = item as Pair<String, Number>
-                    AxisValue(index.toFloat()).setLabel(steps.first)
-                }).apply {
-                    name = "Day"
-                    textSize = 12
-                }
-                axisYLeft = Axis().apply {
-                    name = "Steps"
-                    textSize = 12
-                }
-            }
-
-            graphView.columnChartData = columnChartData
-        } else if (dataType == "heartRate") {
-            val columns = data.map { item ->
-                val pulseData = item as WeekGraphDataProcessor.DayPulseData
-                val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
-                Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
-            }
-
-            val columnChartData = ColumnChartData(columns).apply {
-                axisXBottom = Axis(data.mapIndexed { index, item ->
-                    val pulseData = item as WeekGraphDataProcessor.DayPulseData
-                    AxisValue(index.toFloat()).setLabel(pulseData.label)
-                }).apply {
-                    name = "Day"
-                    textSize = 12
-                }
-                axisYLeft = Axis().apply {
-                    name = "BPM"
-                    textSize = 12
-                }
-            }
-
-            graphView.columnChartData = columnChartData
-        }
+        return Pair(totalWeeks, totalWeeks - 1)
     }
 
     companion object {

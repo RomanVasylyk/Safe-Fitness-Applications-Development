@@ -1,30 +1,6 @@
-<LinearLayout
+<androidx.viewpager2.widget.ViewPager2
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/weekGraphPager"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <TextView
-        android:id="@+id/weekGraphDateRangeText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Date Range"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/weekGraphSummaryText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Summary"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <lecho.lib.hellocharts.view.ColumnChartView
-        android:id="@+id/columnChartView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/white" />
-</LinearLayout>
+    android:overScrollMode="never" />

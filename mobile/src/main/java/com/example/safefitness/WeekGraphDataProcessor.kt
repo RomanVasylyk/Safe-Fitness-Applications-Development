@@ -11,16 +11,8 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val displayDateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
 
-    suspend fun getWeeklyData(dataType: String): WeekGraphData {
+    suspend fun getWeeklyDataForRange(startDate: String, endDate: String, dataType: String): WeekGraphData {
         return withContext(Dispatchers.IO) {
-            val calendar = Calendar.getInstance()
-            calendar.firstDayOfWeek = Calendar.MONDAY
-            calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-
-            val startDate = dateFormat.format(calendar.time)
-            calendar.add(Calendar.DAY_OF_YEAR, 6)
-            val endDate = dateFormat.format(calendar.time)
-
             if (dataType == "steps") {
                 calculateStepsData(startDate, endDate)
             } else {
@@ -32,12 +24,11 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
     private suspend fun calculateStepsData(startDate: String, endDate: String): WeekGraphData {
         val stepData = mutableListOf<Pair<String, Number>>()
         val calendar = Calendar.getInstance()
-        calendar.firstDayOfWeek = Calendar.MONDAY
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        calendar.time = dateFormat.parse(startDate)!!
 
-        for (i in 0..6) {
+        while (calendar.time <= dateFormat.parse(endDate)!!) {
             val currentDate = dateFormat.format(calendar.time)
-            val dayLabel = getDayLabel(i)
+            val dayLabel = getDayLabel(calendar.get(Calendar.DAY_OF_WEEK))
             val dailySteps = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.steps }.sum()
             if (dailySteps > 0) {
                 stepData.add(dayLabel to dailySteps)
@@ -59,12 +50,11 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
     private suspend fun calculateHeartRateData(startDate: String, endDate: String): WeekGraphData {
         val pulseData = mutableListOf<DayPulseData>()
         val calendar = Calendar.getInstance()
-        calendar.firstDayOfWeek = Calendar.MONDAY
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        calendar.time = dateFormat.parse(startDate)!!
 
-        for (i in 0..6) {
+        while (calendar.time <= dateFormat.parse(endDate)!!) {
             val currentDate = dateFormat.format(calendar.time)
-            val dayLabel = getDayLabel(i)
+            val dayLabel = getDayLabel(calendar.get(Calendar.DAY_OF_WEEK))
             val dailyHeartRates = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.heartRate }
             if (dailyHeartRates.isNotEmpty()) {
                 val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f
@@ -84,15 +74,15 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
         )
     }
 
-    private fun getDayLabel(dayIndex: Int): String {
-        return when (dayIndex) {
-            0 -> "Mon"
-            1 -> "Tue"
-            2 -> "Wed"
-            3 -> "Thu"
-            4 -> "Fri"
-            5 -> "Sat"
-            6 -> "Sun"
+    private fun getDayLabel(dayOfWeek: Int): String {
+        return when (dayOfWeek) {
+            Calendar.MONDAY -> "Mon"
+            Calendar.TUESDAY -> "Tue"
+            Calendar.WEDNESDAY -> "Wed"
+            Calendar.THURSDAY -> "Thu"
+            Calendar.FRIDAY -> "Fri"
+            Calendar.SATURDAY -> "Sat"
+            Calendar.SUNDAY -> "Sun"
             else -> ""
         }
     }

@@ -39,5 +39,6 @@ interface FitnessDao {
     @Query("SELECT AVG(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
     suspend fun getAverageHeartRateForCurrentDay(currentDate: String): Float
 
-
+    @Query("SELECT MIN(date) FROM fitness_data")
+    suspend fun getFirstEntryDate(): String?
 }

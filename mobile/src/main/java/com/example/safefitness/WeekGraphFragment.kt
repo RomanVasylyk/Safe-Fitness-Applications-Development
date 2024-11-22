@@ -86,7 +86,7 @@ class WeekGraphFragment : Fragment() {
             val columns = data.map { item ->
                 val pulseData = item as WeekGraphDataProcessor.DayPulseData
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse - pulseData.minPulse, resources.getColor(android.R.color.holo_red_light, null))
+                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
                 Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
             }
 
@@ -107,7 +107,6 @@ class WeekGraphFragment : Fragment() {
             graphView.columnChartData = columnChartData
         }
     }
-
 
     companion object {
         fun newInstance(dataType: String): WeekGraphFragment {

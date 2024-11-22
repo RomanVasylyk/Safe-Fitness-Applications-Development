@@ -18,8 +18,8 @@ class FullScreenGraphActivity : AppCompatActivity() {
         dataType = intent.getStringExtra("dataType") ?: "steps"
 
         tabLayout = findViewById(R.id.tabLayout)
-        tabLayout.addTab(tabLayout.newTab().setText("День"))
-        tabLayout.addTab(tabLayout.newTab().setText("Тиждень"))
+        tabLayout.addTab(tabLayout.newTab().setText("Day"))
+        tabLayout.addTab(tabLayout.newTab().setText("Week"))
 
         replaceFragment(DayGraphFragment.newInstance(dataType))
 

@@ -1,11 +1,12 @@
-package com.example.safefitness
+package com.example.safefitness.ui.graph
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.example.safefitness.GraphManager
+import com.example.safefitness.utils.GraphManager
+import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
 import kotlinx.coroutines.CoroutineScope

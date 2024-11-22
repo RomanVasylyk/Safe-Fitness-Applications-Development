@@ -1,8 +1,9 @@
-package com.example.safefitness
+package com.example.safefitness.ui.adapters
 
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.ui.graph.SingleWeekGraphFragment
 import java.text.SimpleDateFormat
 import java.util.*
 

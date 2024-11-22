@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ConnectToPhone">
         <activity
-            android:name=".FullScreenGraphActivity"
+            android:name=".ui.graph.FullScreenGraphActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:exported="false"
             android:configChanges="orientation|screenSize"

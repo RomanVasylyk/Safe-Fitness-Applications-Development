@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.ui.graph
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,8 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.WeekGraphDataProcessor
+import com.example.safefitness.utils.WeekGraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -81,7 +82,7 @@ class SingleWeekGraphFragment : Fragment() {
             val columns = data.map { item ->
                 val pulseData = item as WeekGraphDataProcessor.DayPulseData
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse - pulseData.minPulse, resources.getColor(android.R.color.holo_red_light, null))
+                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
                 Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
             }
 

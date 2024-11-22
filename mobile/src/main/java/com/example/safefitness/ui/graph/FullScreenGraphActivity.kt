@@ -1,9 +1,10 @@
-package com.example.safefitness
+package com.example.safefitness.ui.graph
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.example.safefitness.R
 import com.google.android.material.tabs.TabLayout
 
 class FullScreenGraphActivity : AppCompatActivity() {

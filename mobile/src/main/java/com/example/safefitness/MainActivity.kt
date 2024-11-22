@@ -10,6 +10,8 @@ import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessEntity
 import com.example.safefitness.data.WearDataListener
+import com.example.safefitness.ui.graph.FullScreenGraphActivity
+import com.example.safefitness.utils.GraphManager
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

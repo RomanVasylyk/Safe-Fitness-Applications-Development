@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.ui.graph
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
+import com.example.safefitness.ui.adapters.DayGraphPagerAdapter
+import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
 import kotlinx.coroutines.CoroutineScope

@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.utils
 
 import com.example.safefitness.data.FitnessDao
 import kotlinx.coroutines.Dispatchers

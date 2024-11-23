@@ -56,10 +56,14 @@ class SingleWeekGraphFragment : Fragment() {
     }
 
     private fun updateGraph(data: List<Any>) {
+        var maxYValue = 0f
+
         if (dataType == "steps") {
             val columns = data.mapIndexed { index, item ->
                 val steps = item as Pair<String, Number>
-                val subcolumn = SubcolumnValue(steps.second.toFloat(), resources.getColor(android.R.color.holo_blue_light, null))
+                val value = steps.second.toFloat()
+                if (value > maxYValue) maxYValue = value
+                val subcolumn = SubcolumnValue(value, resources.getColor(android.R.color.holo_blue_light, null))
                 Column(listOf(subcolumn)).apply { setHasLabels(true) }
             }
 
@@ -81,8 +85,9 @@ class SingleWeekGraphFragment : Fragment() {
         } else if (dataType == "heartRate") {
             val columns = data.map { item ->
                 val pulseData = item as WeekGraphDataProcessor.DayPulseData
+                if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
+                val maxPulseValue = SubcolumnValue(pulseData.maxPulse - pulseData.minPulse, resources.getColor(android.R.color.holo_red_light, null))
                 Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
             }
 
@@ -102,7 +107,14 @@ class SingleWeekGraphFragment : Fragment() {
 
             graphView.columnChartData = columnChartData
         }
+
+        val viewport = Viewport(graphView.maximumViewport).apply {
+            top = maxYValue * 1.1f
+        }
+        graphView.maximumViewport = viewport
+        graphView.currentViewport = viewport
     }
+
 
     companion object {
         fun newInstance(startDate: String, endDate: String, dataType: String): SingleWeekGraphFragment {

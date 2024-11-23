@@ -10,6 +10,7 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val displayDateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
+    private val shortDateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
 
     suspend fun getWeeklyDataForRange(startDate: String, endDate: String, dataType: String): WeekGraphData {
         return withContext(Dispatchers.IO) {
@@ -77,11 +78,37 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
     suspend fun getMonthlyDataForRange(startDate: String, endDate: String, dataType: String): WeekGraphData {
         return withContext(Dispatchers.IO) {
             if (dataType == "steps") {
-                calculateStepsData(startDate, endDate)
+                calculateStepsMonthlyData(startDate, endDate)
             } else {
                 calculateHeartRateMonthlyData(startDate, endDate)
             }
         }
+    }
+
+    private suspend fun calculateStepsMonthlyData(startDate: String, endDate: String): WeekGraphData {
+        val stepData = mutableListOf<Pair<String, Number>>()
+        val calendar = Calendar.getInstance()
+        calendar.time = dateFormat.parse(startDate)!!
+
+        while (calendar.time <= dateFormat.parse(endDate)!!) {
+            val currentDate = dateFormat.format(calendar.time)
+            val dayLabel = shortDateFormat.format(calendar.time)
+            val dailySteps = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.steps }.sum()
+            if (dailySteps > 0) {
+                stepData.add(dayLabel to dailySteps)
+            }
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val totalSteps = stepData.sumBy { it.second.toInt() }
+        val dateRange = "${displayDateFormat.format(dateFormat.parse(startDate))} - ${displayDateFormat.format(dateFormat.parse(endDate))}"
+
+        return WeekGraphData(
+            aggregatedData = stepData,
+            xLabels = stepData.map { it.first },
+            summaryText = "Total Steps: $totalSteps",
+            dateRange = dateRange
+        )
     }
 
     private suspend fun calculateHeartRateMonthlyData(startDate: String, endDate: String): WeekGraphData {
@@ -91,7 +118,7 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
 
         while (calendar.time <= dateFormat.parse(endDate)!!) {
             val currentDate = dateFormat.format(calendar.time)
-            val dayLabel = calendar.get(Calendar.DAY_OF_MONTH).toString()
+            val dayLabel = shortDateFormat.format(calendar.time)
             val dailyHeartRates = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.heartRate }
             if (dailyHeartRates.isNotEmpty()) {
                 val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f

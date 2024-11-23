@@ -21,6 +21,7 @@ class FullScreenGraphActivity : AppCompatActivity() {
         tabLayout = findViewById(R.id.tabLayout)
         tabLayout.addTab(tabLayout.newTab().setText("Day"))
         tabLayout.addTab(tabLayout.newTab().setText("Week"))
+        tabLayout.addTab(tabLayout.newTab().setText("Month"))
 
         replaceFragment(DayGraphFragment.newInstance(dataType))
 
@@ -29,6 +30,7 @@ class FullScreenGraphActivity : AppCompatActivity() {
                 when (tab?.position) {
                     0 -> replaceFragment(DayGraphFragment.newInstance(dataType))
                     1 -> replaceFragment(WeekGraphFragment.newInstance(dataType))
+                    2 -> replaceFragment(MonthGraphFragment.newInstance(dataType))
                 }
             }
 

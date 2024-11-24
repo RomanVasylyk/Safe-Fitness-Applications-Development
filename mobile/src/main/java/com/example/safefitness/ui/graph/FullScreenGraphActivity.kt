@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.safefitness.R
 import com.google.android.material.tabs.TabLayout
+import java.util.Calendar
 
 class FullScreenGraphActivity : AppCompatActivity() {
 
@@ -22,6 +23,7 @@ class FullScreenGraphActivity : AppCompatActivity() {
         tabLayout.addTab(tabLayout.newTab().setText("Day"))
         tabLayout.addTab(tabLayout.newTab().setText("Week"))
         tabLayout.addTab(tabLayout.newTab().setText("Month"))
+        tabLayout.addTab(tabLayout.newTab().setText("Year"))
 
         replaceFragment(DayGraphFragment.newInstance(dataType))
 
@@ -31,6 +33,7 @@ class FullScreenGraphActivity : AppCompatActivity() {
                     0 -> replaceFragment(DayGraphFragment.newInstance(dataType))
                     1 -> replaceFragment(WeekGraphFragment.newInstance(dataType))
                     2 -> replaceFragment(MonthGraphFragment.newInstance(dataType))
+                    3 -> replaceFragment(YearGraphFragment.newInstance(dataType))
                 }
             }
 

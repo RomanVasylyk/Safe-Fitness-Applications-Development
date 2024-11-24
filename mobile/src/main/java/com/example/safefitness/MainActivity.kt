@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
             val fitnessDao = FitnessDatabase.getDatabase(this@MainActivity).fitnessDao()
 
             val calendar = Calendar.getInstance().apply {
-                set(Calendar.YEAR, 2024)
+                set(Calendar.YEAR, 2023)
                 set(Calendar.MONTH, Calendar.JANUARY)
                 set(Calendar.DAY_OF_MONTH, 1)
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             val endDate = Calendar.getInstance().apply {
                 set(Calendar.YEAR, 2024)
                 set(Calendar.MONTH, Calendar.NOVEMBER)
-                set(Calendar.DAY_OF_MONTH, 22)
+                set(Calendar.DAY_OF_MONTH, 25)
                 set(Calendar.HOUR_OF_DAY, 23)
                 set(Calendar.MINUTE, 59)
                 set(Calendar.SECOND, 59)

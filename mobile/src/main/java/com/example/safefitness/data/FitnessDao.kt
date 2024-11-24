@@ -41,4 +41,8 @@ interface FitnessDao {
 
     @Query("SELECT MIN(date) FROM fitness_data")
     suspend fun getFirstEntryDate(): String?
+
+    @Query("SELECT * FROM fitness_data WHERE date BETWEEN :startDate AND :endDate")
+    suspend fun getDataForRange(startDate: String, endDate: String): List<FitnessEntity>
+
 }

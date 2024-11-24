@@ -1,0 +1,31 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/yearGraphDateRangeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Date Range: Jan 2024 - Dec 2024"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/yearGraphSummaryText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Total Steps:"
+        android:textSize="16sp"
+        android:textStyle="italic" />
+
+    <lecho.lib.hellocharts.view.ColumnChartView
+        android:id="@+id/yearColumnChartView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white" />
+
+</LinearLayout>

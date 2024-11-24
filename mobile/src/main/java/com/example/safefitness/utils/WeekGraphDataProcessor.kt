@@ -138,6 +138,100 @@ class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
         )
     }
 
+    suspend fun getYearlyData(year: Int, dataType: String): WeekGraphData {
+        return withContext(Dispatchers.IO) {
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.YEAR, year)
+            calendar.set(Calendar.MONTH, Calendar.JANUARY)
+            calendar.set(Calendar.DAY_OF_MONTH, 1)
+            val startDate = dateFormat.format(calendar.time)
+
+            calendar.set(Calendar.MONTH, Calendar.DECEMBER)
+            calendar.set(Calendar.DAY_OF_MONTH, 31)
+            val endDate = dateFormat.format(calendar.time)
+
+            if (dataType == "steps") {
+                calculateStepsYearlyData(startDate, endDate)
+            } else {
+                calculateHeartRateYearlyData(startDate, endDate)
+            }
+        }
+    }
+
+    private suspend fun calculateStepsYearlyData(startDate: String, endDate: String): WeekGraphData {
+        val stepData = mutableListOf<Pair<String, Number>>()
+        val calendar = Calendar.getInstance()
+        calendar.time = dateFormat.parse(startDate)!!
+
+        while (calendar.time <= dateFormat.parse(endDate)!!) {
+            val startOfMonth = calendar.clone() as Calendar
+            startOfMonth.set(Calendar.DAY_OF_MONTH, 1)
+
+            val endOfMonth = calendar.clone() as Calendar
+            endOfMonth.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+
+            val startDateOfMonth = dateFormat.format(startOfMonth.time)
+            val endDateOfMonth = dateFormat.format(endOfMonth.time)
+
+            val monthlySteps = fitnessDao.getDataForRange(startDateOfMonth, endDateOfMonth)
+                .mapNotNull { it.steps }
+                .sum()
+
+            val monthLabel = startOfMonth.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH)
+            stepData.add(monthLabel to monthlySteps)
+
+            calendar.add(Calendar.MONTH, 1)
+        }
+
+        val totalSteps = stepData.sumBy { it.second.toInt() }
+        val dateRange = "${displayDateFormat.format(dateFormat.parse(startDate))} - ${displayDateFormat.format(dateFormat.parse(endDate))}"
+
+        return WeekGraphData(
+            aggregatedData = stepData,
+            xLabels = stepData.map { it.first },
+            summaryText = "Total Steps: $totalSteps",
+            dateRange = dateRange
+        )
+    }
+
+    private suspend fun calculateHeartRateYearlyData(startDate: String, endDate: String): WeekGraphData {
+        val pulseData = mutableListOf<DayPulseData>()
+        val calendar = Calendar.getInstance()
+        calendar.time = dateFormat.parse(startDate)!!
+
+        while (calendar.time <= dateFormat.parse(endDate)!!) {
+            val startOfMonth = calendar.clone() as Calendar
+            startOfMonth.set(Calendar.DAY_OF_MONTH, 1)
+
+            val endOfMonth = calendar.clone() as Calendar
+            endOfMonth.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+
+            val startDateOfMonth = dateFormat.format(startOfMonth.time)
+            val endDateOfMonth = dateFormat.format(endOfMonth.time)
+
+            val monthlyHeartRates = fitnessDao.getDataForRange(startDateOfMonth, endDateOfMonth)
+                .mapNotNull { it.heartRate }
+
+            if (monthlyHeartRates.isNotEmpty()) {
+                val minPulse = monthlyHeartRates.minOrNull() ?: 0f
+                val maxPulse = monthlyHeartRates.maxOrNull() ?: 0f
+                val monthLabel = startOfMonth.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH)
+                pulseData.add(DayPulseData(monthLabel, minPulse, maxPulse))
+            }
+
+            calendar.add(Calendar.MONTH, 1)
+        }
+
+        val dateRange = "${displayDateFormat.format(dateFormat.parse(startDate))} - ${displayDateFormat.format(dateFormat.parse(endDate))}"
+
+        return WeekGraphData(
+            aggregatedData = pulseData,
+            xLabels = pulseData.map { it.label },
+            summaryText = "",
+            dateRange = dateRange
+        )
+    }
+
     private fun getDayLabel(dayOfWeek: Int): String {
         return when (dayOfWeek) {
             Calendar.MONDAY -> "Mon"

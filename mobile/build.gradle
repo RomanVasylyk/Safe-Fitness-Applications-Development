@@ -53,7 +53,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
     // Material Design - Components and themes for modern UIs
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.11.0'
 
     // Google Play Services Wearable - API for communication between Wear OS and paired devices
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'

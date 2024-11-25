@@ -11,7 +11,8 @@
         android:layout_marginBottom="8dp"
         android:text="Date Range"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:textColor="@android:color/darker_gray"/>
 
     <TextView
         android:id="@+id/weekGraphSummaryText"
@@ -20,7 +21,8 @@
         android:layout_marginBottom="8dp"
         android:text="Summary"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:textColor="@android:color/darker_gray"/>
 
     <lecho.lib.hellocharts.view.ColumnChartView
         android:id="@+id/columnChartView"

@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.SafeFitness" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/secondaryColor</item>
+        <item name="android:colorBackground">@color/backgroundColor</item>
+    </style>
+</resources>

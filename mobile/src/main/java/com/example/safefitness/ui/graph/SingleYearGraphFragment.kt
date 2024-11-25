@@ -72,7 +72,7 @@ class SingleYearGraphFragment : Fragment() {
                 if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
                 axisValues.add(AxisValue(index.toFloat()).setLabel(pulseData.label))
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse - pulseData.minPulse, resources.getColor(android.R.color.holo_red_light, null))
+                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
                 Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
             }
         }

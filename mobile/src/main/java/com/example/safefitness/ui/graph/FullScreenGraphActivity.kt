@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.safefitness.R
 import com.google.android.material.tabs.TabLayout
-import java.util.Calendar
 
 class FullScreenGraphActivity : AppCompatActivity() {
 
@@ -17,13 +16,20 @@ class FullScreenGraphActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_full_screen_graph)
 
+        val topAppBar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.topAppBar)
+
+        topAppBar.setNavigationOnClickListener {
+            finish()
+        }
+
         dataType = intent.getStringExtra("dataType") ?: "steps"
 
         tabLayout = findViewById(R.id.tabLayout)
-        tabLayout.addTab(tabLayout.newTab().setText("Day"))
-        tabLayout.addTab(tabLayout.newTab().setText("Week"))
-        tabLayout.addTab(tabLayout.newTab().setText("Month"))
-        tabLayout.addTab(tabLayout.newTab().setText("Year"))
+        tabLayout.addTab(tabLayout.newTab().setText("Day").setIcon(R.drawable.ic_day))
+        tabLayout.addTab(tabLayout.newTab().setText("Week").setIcon(R.drawable.ic_week))
+        tabLayout.addTab(tabLayout.newTab().setText("Month").setIcon(R.drawable.ic_month))
+        tabLayout.addTab(tabLayout.newTab().setText("Year").setIcon(R.drawable.ic_year))
+
 
         replaceFragment(DayGraphFragment.newInstance(dataType))
 

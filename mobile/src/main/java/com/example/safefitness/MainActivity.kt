@@ -27,6 +27,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalStepsText: TextView
     private lateinit var lastHeartRateText: TextView
 
+    private lateinit var avgHeartRateText: TextView
+    private lateinit var minHeartRateText: TextView
+    private lateinit var maxHeartRateText: TextView
+
     private lateinit var dataHandler: DataHandler
     private lateinit var graphManager: GraphManager
     private lateinit var wearDataListener: WearDataListener
@@ -67,6 +71,9 @@ class MainActivity : AppCompatActivity() {
         heartRateGraph = findViewById(R.id.heartRateGraph)
         totalStepsText = findViewById(R.id.totalStepsText)
         lastHeartRateText = findViewById(R.id.lastHeartRateText)
+        avgHeartRateText = findViewById(R.id.avgHeartRateText)
+        minHeartRateText = findViewById(R.id.minHeartRateText)
+        maxHeartRateText = findViewById(R.id.maxHeartRateText)
     }
 
     private fun updateData() {
@@ -77,12 +84,19 @@ class MainActivity : AppCompatActivity() {
             aggregatedSteps = stepsData
             aggregatedHeartRate = heartRateData
 
-            val totalSteps = dataHandler.fitnessDao.getTotalStepsForCurrentDay(currentDate)
-            val lastHeartRate = dataHandler.fitnessDao.getLastHeartRateForCurrentDay(currentDate)
+            val totalSteps = fitnessDao.getTotalStepsForCurrentDay(currentDate)
+            val lastHeartRate = fitnessDao.getLastHeartRateForCurrentDay(currentDate)
+            val avgHeartRate = fitnessDao.getAverageHeartRateForCurrentDay(currentDate)
+            val minHeartRate = fitnessDao.getMinHeartRateForCurrentDay(currentDate)
+            val maxHeartRate = fitnessDao.getMaxHeartRateForCurrentDay(currentDate)
 
             runOnUiThread {
                 totalStepsText.text = "Total Steps: $totalSteps"
                 lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate ?: "N/A"} bpm"
+
+                avgHeartRateText.text = "Avg: ${avgHeartRate?.toInt() ?: "N/A"} bpm"
+                minHeartRateText.text = "Min: ${minHeartRate?.toInt() ?: "N/A"} bpm"
+                maxHeartRateText.text = "Max: ${maxHeartRate?.toInt() ?: "N/A"} bpm"
 
                 graphManager.updateGraph(stepsGraph, aggregatedSteps, "Steps", "Time", "Steps", this@MainActivity)
                 graphManager.updateGraph(heartRateGraph, aggregatedHeartRate, "Heart Rate", "Time", "BPM", this@MainActivity)
@@ -135,10 +149,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             while (calendar <= endDate) {
+                val hour = calendar.get(Calendar.HOUR_OF_DAY)
                 val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
 
-                val randomSteps = (0..1000).random()
-                val randomHeartRate = (60..190).random().toFloat()
+                val randomSteps = if (hour in 6..21) (0..1000).random() else 0
+                val randomHeartRate = if (hour in 6..21) (50..190).random().toFloat() else (40..60).random().toFloat()
 
                 val exists = fitnessDao.dataExists(date, randomSteps, randomHeartRate)
                 if (exists == 0) {

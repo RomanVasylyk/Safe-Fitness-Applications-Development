@@ -33,9 +33,6 @@ interface FitnessDao {
     @Query("SELECT COUNT(DISTINCT date(date)) FROM fitness_data")
     suspend fun getAvailableDaysCount(): Int
 
-    @Query("SELECT * FROM fitness_data WHERE date LIKE :specificDate || '%' ORDER BY date ASC")
-    suspend fun getDataForSpecificDay(specificDate: String): List<FitnessEntity>
-
     @Query("SELECT AVG(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
     suspend fun getAverageHeartRateForCurrentDay(currentDate: String): Float
 
@@ -44,5 +41,11 @@ interface FitnessDao {
 
     @Query("SELECT * FROM fitness_data WHERE date BETWEEN :startDate AND :endDate")
     suspend fun getDataForRange(startDate: String, endDate: String): List<FitnessEntity>
+
+    @Query("SELECT MIN(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
+    suspend fun getMinHeartRateForCurrentDay(currentDate: String): Float?
+
+    @Query("SELECT MAX(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
+    suspend fun getMaxHeartRateForCurrentDay(currentDate: String): Float?
 
 }

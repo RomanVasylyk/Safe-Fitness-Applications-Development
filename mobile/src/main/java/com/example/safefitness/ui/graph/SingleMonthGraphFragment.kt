@@ -98,7 +98,7 @@ class SingleMonthGraphFragment : Fragment() {
                 dayLabels.add(pulseData.label)
                 if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse - pulseData.minPulse, resources.getColor(android.R.color.holo_red_light, null))
+                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
                 axisValues.add(AxisValue(index.toFloat()).setLabel(pulseData.label))
                 Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
             }

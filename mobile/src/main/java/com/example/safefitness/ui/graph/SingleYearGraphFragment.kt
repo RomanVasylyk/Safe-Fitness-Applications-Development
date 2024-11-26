@@ -8,7 +8,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.utils.WeekGraphDataProcessor
+import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,7 +21,7 @@ class SingleYearGraphFragment : Fragment() {
     private lateinit var graphView: ColumnChartView
     private lateinit var summaryText: TextView
     private lateinit var dateRangeText: TextView
-    private lateinit var dataProcessor: WeekGraphDataProcessor
+    private lateinit var dataProcessor: GraphDataProcessor
     private var year: Int = 0
     private var dataType: String = "steps"
 
@@ -36,7 +36,7 @@ class SingleYearGraphFragment : Fragment() {
         dateRangeText = view.findViewById(R.id.yearGraphDateRangeText)
 
         val database = FitnessDatabase.getDatabase(requireContext())
-        dataProcessor = WeekGraphDataProcessor(database.fitnessDao())
+        dataProcessor = GraphDataProcessor(database.fitnessDao())
 
         year = arguments?.getInt("year") ?: Calendar.getInstance().get(Calendar.YEAR)
         dataType = arguments?.getString("dataType") ?: "steps"
@@ -68,7 +68,7 @@ class SingleYearGraphFragment : Fragment() {
                 val subcolumn = SubcolumnValue(value, resources.getColor(android.R.color.holo_blue_light, null))
                 Column(listOf(subcolumn)).apply { setHasLabels(true) }
             } else {
-                val pulseData = item as WeekGraphDataProcessor.DayPulseData
+                val pulseData = item as GraphDataProcessor.DayPulseData
                 if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
                 axisValues.add(AxisValue(index.toFloat()).setLabel(pulseData.label))
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))

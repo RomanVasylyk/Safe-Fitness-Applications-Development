@@ -4,6 +4,7 @@ import android.content.Context
 import lecho.lib.hellocharts.formatter.SimpleAxisValueFormatter
 import lecho.lib.hellocharts.gesture.ContainerScrollType
 import lecho.lib.hellocharts.gesture.ZoomType
+import lecho.lib.hellocharts.listener.LineChartOnValueSelectListener
 import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.LineChartView
 
@@ -31,7 +32,8 @@ class GraphManager {
         val line = Line(points).apply {
             color = context.getColor(android.R.color.holo_blue_dark)
             isCubic = true
-            setHasLabels(true)
+            setHasLabels(false)
+            setHasLabelsOnlyForSelected(true)
             setHasLines(true)
             setHasPoints(true)
             pointRadius = 4
@@ -81,6 +83,14 @@ class GraphManager {
             zoomType = ZoomType.HORIZONTAL_AND_VERTICAL
             isZoomEnabled = true
             setContainerScrollEnabled(true, ContainerScrollType.HORIZONTAL)
+            setOnValueTouchListener(ValueTouchListener())
+        }
+    }
+    private inner class ValueTouchListener : LineChartOnValueSelectListener {
+        override fun onValueSelected(lineIndex: Int, pointIndex: Int, value: PointValue) {
+        }
+
+        override fun onValueDeselected() {
         }
     }
 }

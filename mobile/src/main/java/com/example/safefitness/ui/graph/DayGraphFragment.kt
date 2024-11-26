@@ -7,10 +7,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
-import com.example.safefitness.ui.adapters.DayGraphPagerAdapter
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
+import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,7 +25,6 @@ class DayGraphFragment : Fragment() {
     private lateinit var dateText: TextView
     private lateinit var summaryText: TextView
     private lateinit var fitnessDao: FitnessDao
-    private lateinit var adapter: DayGraphPagerAdapter
 
     private var dataType: String = "steps"
 
@@ -44,7 +44,17 @@ class DayGraphFragment : Fragment() {
         dataType = arguments?.getString("dataType") ?: "steps"
 
         val availableDaysCount = runBlocking { fitnessDao.getAvailableDaysCount() }
-        adapter = DayGraphPagerAdapter(this, fitnessDao, availableDaysCount, dataType)
+
+        val adapter = UniversalGraphPagerAdapter(
+            fragment = this,
+            totalItems = availableDaysCount,
+            dateRangeProvider = { position ->
+                DateUtils.getDayDate(position, availableDaysCount)
+            },
+            fragmentProvider = { startDate, _ ->
+                SingleDayGraphFragment.newInstance(startDate, dataType)
+            }
+        )
         viewPager.adapter = adapter
 
         viewPager.setCurrentItem(availableDaysCount - 1, false)
@@ -62,7 +72,7 @@ class DayGraphFragment : Fragment() {
     }
 
     private fun updateSummary(position: Int, availableDaysCount: Int) {
-        val date = getDateForPosition(position, availableDaysCount)
+        val date = DateUtils.getDayDate(position, availableDaysCount).first
         dateText.text = "Date: $date"
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -82,12 +92,6 @@ class DayGraphFragment : Fragment() {
                 summaryText.text = summaryLabel
             }
         }
-    }
-
-    private fun getDateForPosition(position: Int, availableDaysCount: Int): String {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -(availableDaysCount - 1 - position))
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
     }
 
     companion object {

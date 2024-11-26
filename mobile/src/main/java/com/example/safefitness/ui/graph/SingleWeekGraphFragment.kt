@@ -8,7 +8,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.utils.WeekGraphDataProcessor
+import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,7 +20,7 @@ class SingleWeekGraphFragment : Fragment() {
     private lateinit var graphView: ColumnChartView
     private lateinit var summaryText: TextView
     private lateinit var dateRangeText: TextView
-    private lateinit var dataProcessor: WeekGraphDataProcessor
+    private lateinit var dataProcessor: GraphDataProcessor
     private var startDate: String = ""
     private var endDate: String = ""
     private var dataType: String = "steps"
@@ -36,7 +36,7 @@ class SingleWeekGraphFragment : Fragment() {
         dateRangeText = view.findViewById(R.id.weekGraphDateRangeText)
 
         val database = FitnessDatabase.getDatabase(requireContext())
-        dataProcessor = WeekGraphDataProcessor(database.fitnessDao())
+        dataProcessor = GraphDataProcessor(database.fitnessDao())
 
         startDate = arguments?.getString("startDate") ?: ""
         endDate = arguments?.getString("endDate") ?: ""
@@ -84,7 +84,7 @@ class SingleWeekGraphFragment : Fragment() {
             graphView.columnChartData = columnChartData
         } else if (dataType == "heartRate") {
             val columns = data.map { item ->
-                val pulseData = item as WeekGraphDataProcessor.DayPulseData
+                val pulseData = item as GraphDataProcessor.DayPulseData
                 if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
                 val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
                 val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
@@ -93,7 +93,7 @@ class SingleWeekGraphFragment : Fragment() {
 
             val columnChartData = ColumnChartData(columns).apply {
                 axisXBottom = Axis(data.mapIndexed { index, item ->
-                    val pulseData = item as WeekGraphDataProcessor.DayPulseData
+                    val pulseData = item as GraphDataProcessor.DayPulseData
                     AxisValue(index.toFloat()).setLabel(pulseData.label)
                 }).apply {
                     name = "Day"

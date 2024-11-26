@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class WeekGraphDataProcessor(private val fitnessDao: FitnessDao) {
+class GraphDataProcessor(private val fitnessDao: FitnessDao) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val displayDateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)

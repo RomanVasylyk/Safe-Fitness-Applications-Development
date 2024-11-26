@@ -7,8 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
-import com.example.safefitness.ui.adapters.WeekGraphPagerAdapter
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
+import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,7 +17,6 @@ import java.util.*
 class WeekGraphFragment : Fragment() {
 
     private lateinit var viewPager: ViewPager2
-    private lateinit var adapter: WeekGraphPagerAdapter
     private var dataType: String = "steps"
 
     override fun onCreateView(
@@ -32,7 +32,17 @@ class WeekGraphFragment : Fragment() {
         dataType = arguments?.getString("dataType") ?: "steps"
 
         val (totalWeeks, currentWeekPosition) = runBlocking { getTotalWeeksCount(database) }
-        adapter = WeekGraphPagerAdapter(this, database, totalWeeks, dataType)
+
+        val adapter = UniversalGraphPagerAdapter(
+            fragment = this,
+            totalItems = totalWeeks,
+            dateRangeProvider = { position ->
+                DateUtils.getWeekDate(position, totalWeeks)
+            },
+            fragmentProvider = { startDate, endDate ->
+                SingleWeekGraphFragment.newInstance(startDate, endDate, dataType)
+            }
+        )
         viewPager.adapter = adapter
 
         viewPager.setCurrentItem(currentWeekPosition, false)
@@ -46,7 +56,6 @@ class WeekGraphFragment : Fragment() {
 
         val calendar = Calendar.getInstance()
         calendar.firstDayOfWeek = Calendar.MONDAY
-
         calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
         val currentMonday = calendar.time
 

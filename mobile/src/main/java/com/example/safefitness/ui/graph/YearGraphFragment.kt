@@ -8,7 +8,8 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.ui.adapters.YearGraphPagerAdapter
+import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
+import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,7 +17,6 @@ import java.util.*
 class YearGraphFragment : Fragment() {
 
     private lateinit var viewPager: ViewPager2
-    private lateinit var adapter: YearGraphPagerAdapter
     private lateinit var database: FitnessDatabase
     private var dataType: String = "steps"
 
@@ -40,7 +40,17 @@ class YearGraphFragment : Fragment() {
         val earliestYear = runBlocking { database.fitnessDao().getFirstEntryDate()?.let { getYearFromDate(it) } ?: currentYear }
 
         val totalYears = (currentYear - earliestYear + 1).coerceAtLeast(1)
-        adapter = YearGraphPagerAdapter(this, database, totalYears, dataType)
+
+        val adapter = UniversalGraphPagerAdapter(
+            fragment = this,
+            totalItems = totalYears,
+            dateRangeProvider = { position ->
+                DateUtils.getYearDate(position, totalYears)
+            },
+            fragmentProvider = { startDate, _ ->
+                SingleYearGraphFragment.newInstance(startDate.substring(0, 4).toInt(), dataType)
+            }
+        )
         viewPager.adapter = adapter
 
         viewPager.setCurrentItem(totalYears - 1, false)

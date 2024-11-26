@@ -8,7 +8,8 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.ui.adapters.MonthGraphPagerAdapter
+import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
+import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,7 +17,6 @@ import java.util.*
 class MonthGraphFragment : Fragment() {
 
     private lateinit var viewPager: ViewPager2
-    private lateinit var adapter: MonthGraphPagerAdapter
     private var dataType: String = "steps"
 
     override fun onCreateView(
@@ -28,11 +28,20 @@ class MonthGraphFragment : Fragment() {
         viewPager = view.findViewById(R.id.monthGraphPager)
 
         val database = FitnessDatabase.getDatabase(requireContext())
-
         dataType = arguments?.getString("dataType") ?: "steps"
 
         val (totalMonths, currentMonthPosition) = runBlocking { getTotalMonthsCount(database) }
-        adapter = MonthGraphPagerAdapter(this, database, totalMonths, dataType)
+
+        val adapter = UniversalGraphPagerAdapter(
+            fragment = this,
+            totalItems = totalMonths,
+            dateRangeProvider = { position ->
+                DateUtils.getMonthDate(position, totalMonths)
+            },
+            fragmentProvider = { startDate, endDate ->
+                SingleMonthGraphFragment.newInstance(startDate, endDate, dataType)
+            }
+        )
         viewPager.adapter = adapter
 
         viewPager.setCurrentItem(currentMonthPosition, false)

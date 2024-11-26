@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
             val fitnessDao = FitnessDatabase.getDatabase(this@MainActivity).fitnessDao()
 
             val calendar = Calendar.getInstance().apply {
-                set(Calendar.YEAR, 2023)
+                set(Calendar.YEAR, 2024)
                 set(Calendar.MONTH, Calendar.JANUARY)
                 set(Calendar.DAY_OF_MONTH, 1)
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -142,31 +142,43 @@ class MainActivity : AppCompatActivity() {
             val endDate = Calendar.getInstance().apply {
                 set(Calendar.YEAR, 2024)
                 set(Calendar.MONTH, Calendar.NOVEMBER)
-                set(Calendar.DAY_OF_MONTH, 25)
+                set(Calendar.DAY_OF_MONTH, 26)
                 set(Calendar.HOUR_OF_DAY, 23)
                 set(Calendar.MINUTE, 59)
                 set(Calendar.SECOND, 59)
             }
 
+            var lastHeartRate = (40..50).random().toFloat()
+            var hourlySteps = 0
+
             while (calendar <= endDate) {
                 val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                val minute = calendar.get(Calendar.MINUTE)
                 val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(calendar.time)
 
-                val randomSteps = if (hour in 6..21) (0..1000).random() else 0
-                val randomHeartRate = if (hour in 6..21) (50..190).random().toFloat() else (40..60).random().toFloat()
+                if (minute == 0) {
+                    hourlySteps = if (hour in 6..21) (0..1000).random() else 0
+                }
 
-                val exists = fitnessDao.dataExists(date, randomSteps, randomHeartRate)
+                lastHeartRate = when {
+                    hour in 0..5 || hour in 22..23 -> lastHeartRate + (-1..1).random()
+                    hour in 6..8 || hour in 20..21 -> (50..70).random().toFloat()
+                    hourlySteps > 700 -> (110..150).random().toFloat()
+                    else -> lastHeartRate + (-3..3).random()
+                }.coerceIn(40f, 150f)
+
+                val exists = fitnessDao.dataExists(date, hourlySteps, lastHeartRate)
                 if (exists == 0) {
                     fitnessDao.insertData(
                         FitnessEntity(
                             date = date,
-                            steps = randomSteps,
-                            heartRate = randomHeartRate
+                            steps = if (minute == 0) hourlySteps else 0,
+                            heartRate = lastHeartRate
                         )
                     )
                 }
 
-                calendar.add(Calendar.HOUR_OF_DAY, 1)
+                calendar.add(Calendar.MINUTE, 5)
             }
         }
     }

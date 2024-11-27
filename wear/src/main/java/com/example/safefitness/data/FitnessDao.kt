@@ -25,7 +25,7 @@ interface FitnessDao {
     @Query("""
     SELECT COUNT(*) 
     FROM fitness_data 
-    WHERE strftime('%Y-%m-%d %H:%M', date) = strftime('%Y-%m-%d %H:%M', :date) AND 
+    WHERE date = :date AND 
           (steps = :steps OR (steps IS NULL AND :steps IS NULL)) AND 
           (heartRate = :heartRate OR (heartRate IS NULL AND :heartRate IS NULL))
     """)
@@ -36,4 +36,11 @@ interface FitnessDao {
 
     @Query("UPDATE fitness_data SET steps = :steps WHERE date = :time")
     suspend fun updateStepsByTime(time: String, steps: Int)
+
+    @Query("SELECT * FROM fitness_data WHERE date = :date LIMIT 1")
+    suspend fun getEntryByDate(date: String): FitnessEntity?
+
+    @Query("UPDATE fitness_data SET heartRate = :heartRate WHERE date = :date")
+    suspend fun updateHeartRateByTime(date: String, heartRate: Float)
+
 }

@@ -98,9 +98,17 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
     private fun saveHeartRateToDatabase(heartRate: Float) {
         val currentTime = getCurrentTime()
         CoroutineScope(Dispatchers.IO).launch {
-            fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
+            val existingEntry = fitnessDao.getEntryByDate(currentTime)
+            if (existingEntry != null) {
+                if (existingEntry.heartRate != heartRate) {
+                    fitnessDao.updateHeartRateByTime(currentTime, heartRate)
+                }
+            } else {
+                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
+            }
         }
     }
+
 
     private fun getCurrentTime(): String {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())

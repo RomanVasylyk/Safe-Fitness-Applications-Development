@@ -5,12 +5,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,41 +33,44 @@ class MonthGraphFragment : Fragment() {
         val database = FitnessDatabase.getDatabase(requireContext())
         dataType = arguments?.getString("dataType") ?: "steps"
 
-        val (totalMonths, currentMonthPosition) = runBlocking { getTotalMonthsCount(database) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (totalMonths, currentMonthPosition) = getTotalMonthsCount(database)
 
-        val adapter = UniversalGraphPagerAdapter(
-            fragment = this,
-            totalItems = totalMonths,
-            dateRangeProvider = { position ->
-                DateUtils.getMonthDate(position, totalMonths)
-            },
-            fragmentProvider = { startDate, endDate ->
-                SingleMonthGraphFragment.newInstance(startDate, endDate, dataType)
-            }
-        )
-        viewPager.adapter = adapter
-
-        viewPager.setCurrentItem(currentMonthPosition, false)
+            val adapter = UniversalGraphPagerAdapter(
+                fragment = this@MonthGraphFragment,
+                totalItems = totalMonths,
+                dateRangeProvider = { position ->
+                    DateUtils.getMonthDate(position, totalMonths)
+                },
+                fragmentProvider = { startDate, endDate ->
+                    SingleMonthGraphFragment.newInstance(startDate, endDate, dataType)
+                }
+            )
+            viewPager.adapter = adapter
+            viewPager.setCurrentItem(currentMonthPosition, false)
+        }
 
         return view
     }
 
     private suspend fun getTotalMonthsCount(database: FitnessDatabase): Pair<Int, Int> {
-        val firstEntryDateString = database.fitnessDao().getFirstEntryDate() ?: return Pair(1, 0)
-        val firstEntryDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(firstEntryDateString) ?: return Pair(1, 0)
+        return withContext(Dispatchers.IO) {
+            val firstEntryDateString = database.fitnessDao().getFirstEntryDate() ?: return@withContext Pair(1, 0)
+            val firstEntryDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(firstEntryDateString) ?: return@withContext Pair(1, 0)
 
-        val calendar = Calendar.getInstance()
-        calendar.time = firstEntryDate
+            val calendar = Calendar.getInstance()
+            calendar.time = firstEntryDate
 
-        val startYear = calendar.get(Calendar.YEAR)
-        val startMonth = calendar.get(Calendar.MONTH)
+            val startYear = calendar.get(Calendar.YEAR)
+            val startMonth = calendar.get(Calendar.MONTH)
 
-        val currentCalendar = Calendar.getInstance()
-        val currentYear = currentCalendar.get(Calendar.YEAR)
-        val currentMonth = currentCalendar.get(Calendar.MONTH)
+            val currentCalendar = Calendar.getInstance()
+            val currentYear = currentCalendar.get(Calendar.YEAR)
+            val currentMonth = currentCalendar.get(Calendar.MONTH)
 
-        val totalMonths = (currentYear - startYear) * 12 + (currentMonth - startMonth + 1)
-        return Pair(totalMonths, totalMonths - 1)
+            val totalMonths = (currentYear - startYear) * 12 + (currentMonth - startMonth + 1)
+            Pair(totalMonths, totalMonths - 1)
+        }
     }
 
     companion object {

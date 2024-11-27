@@ -6,12 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.ColumnChartView
 import java.util.Calendar
@@ -47,8 +49,10 @@ class SingleYearGraphFragment : Fragment() {
 
 
     private fun loadYearData() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val yearData = dataProcessor.getYearlyData(year, dataType)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val yearData = withContext(Dispatchers.IO) {
+                dataProcessor.getYearlyData(year, dataType)
+            }
             summaryText.text = yearData.summaryText
             dateRangeText.text = yearData.dateRange
             updateGraph(yearData.aggregatedData)

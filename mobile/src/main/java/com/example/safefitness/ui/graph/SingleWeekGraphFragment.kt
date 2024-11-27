@@ -6,12 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.ColumnChartView
 
@@ -47,8 +49,10 @@ class SingleWeekGraphFragment : Fragment() {
     }
 
     private fun loadWeekData() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val weekData = dataProcessor.getWeeklyDataForRange(startDate, endDate, dataType)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val weekData = withContext(Dispatchers.IO) {
+                dataProcessor.getWeeklyDataForRange(startDate, endDate, dataType)
+            }
             summaryText.text = weekData.summaryText
             dateRangeText.text = weekData.dateRange
             updateGraph(weekData.aggregatedData)

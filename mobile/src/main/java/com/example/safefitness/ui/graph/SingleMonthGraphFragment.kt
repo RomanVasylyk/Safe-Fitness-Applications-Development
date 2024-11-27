@@ -7,12 +7,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.listener.ColumnChartOnValueSelectListener
 import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.ColumnChartView
@@ -51,8 +53,10 @@ class SingleMonthGraphFragment : Fragment() {
     }
 
     private fun loadMonthData() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val monthData = dataProcessor.getMonthlyDataForRange(startDate, endDate, dataType)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val monthData = withContext(Dispatchers.IO) {
+                dataProcessor.getMonthlyDataForRange(startDate, endDate, dataType)
+            }
             dayLabels.clear()
             dayLabels.addAll(monthData.xLabels)
             summaryText.text = monthData.summaryText

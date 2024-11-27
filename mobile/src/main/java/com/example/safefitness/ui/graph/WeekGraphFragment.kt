@@ -5,12 +5,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,21 +35,24 @@ class WeekGraphFragment : Fragment() {
 
         dataType = arguments?.getString("dataType") ?: "steps"
 
-        val (totalWeeks, currentWeekPosition) = runBlocking { getTotalWeeksCount(database) }
-
-        val adapter = UniversalGraphPagerAdapter(
-            fragment = this,
-            totalItems = totalWeeks,
-            dateRangeProvider = { position ->
-                DateUtils.getWeekDate(position, totalWeeks)
-            },
-            fragmentProvider = { startDate, endDate ->
-                SingleWeekGraphFragment.newInstance(startDate, endDate, dataType)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (totalWeeks, currentWeekPosition) = withContext(Dispatchers.IO) {
+                getTotalWeeksCount(database)
             }
-        )
-        viewPager.adapter = adapter
 
-        viewPager.setCurrentItem(currentWeekPosition, false)
+            val adapter = UniversalGraphPagerAdapter(
+                fragment = this@WeekGraphFragment,
+                totalItems = totalWeeks,
+                dateRangeProvider = { position ->
+                    DateUtils.getWeekDate(position, totalWeeks)
+                },
+                fragmentProvider = { startDate, endDate ->
+                    SingleWeekGraphFragment.newInstance(startDate, endDate, dataType)
+                }
+            )
+            viewPager.adapter = adapter
+            viewPager.setCurrentItem(currentWeekPosition, false)
+        }
 
         return view
     }

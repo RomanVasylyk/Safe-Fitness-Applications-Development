@@ -6,18 +6,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.text.SimpleDateFormat
-import java.util.*
+import kotlinx.coroutines.withContext
 
 class DayGraphFragment : Fragment() {
 
@@ -43,8 +41,19 @@ class DayGraphFragment : Fragment() {
 
         dataType = arguments?.getString("dataType") ?: "steps"
 
-        val availableDaysCount = runBlocking { fitnessDao.getAvailableDaysCount() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val availableDaysCount = withContext(Dispatchers.IO) {
+                fitnessDao.getAvailableDaysCount()
+            }
 
+            setupViewPager(availableDaysCount)
+            updateSummary(availableDaysCount - 1, availableDaysCount)
+        }
+
+        return view
+    }
+
+    private suspend fun setupViewPager(availableDaysCount: Int) {
         val adapter = UniversalGraphPagerAdapter(
             fragment = this,
             totalItems = availableDaysCount,
@@ -55,31 +64,29 @@ class DayGraphFragment : Fragment() {
                 SingleDayGraphFragment.newInstance(startDate, dataType)
             }
         )
-        viewPager.adapter = adapter
-
-        viewPager.setCurrentItem(availableDaysCount - 1, false)
-
-        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                super.onPageSelected(position)
-                updateSummary(position, availableDaysCount)
-            }
-        })
-
-        updateSummary(availableDaysCount - 1, availableDaysCount)
-
-        return view
+        withContext(Dispatchers.Main) {
+            viewPager.adapter = adapter
+            viewPager.setCurrentItem(availableDaysCount - 1, false)
+            viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    super.onPageSelected(position)
+                    updateSummary(position, availableDaysCount)
+                }
+            })
+        }
     }
 
     private fun updateSummary(position: Int, availableDaysCount: Int) {
         val date = DateUtils.getDayDate(position, availableDaysCount).first
         dateText.text = "Date: $date"
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val summary = if (dataType == "steps") {
-                fitnessDao.getTotalStepsForCurrentDay(date)
-            } else {
-                fitnessDao.getDataForCurrentDay(date).mapNotNull { it.heartRate }.average().toInt()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val summary = withContext(Dispatchers.IO) {
+                if (dataType == "steps") {
+                    fitnessDao.getTotalStepsForCurrentDay(date)
+                } else {
+                    fitnessDao.getDataForCurrentDay(date).mapNotNull { it.heartRate }.average().toInt()
+                }
             }
 
             val summaryLabel = if (dataType == "steps") {
@@ -88,9 +95,7 @@ class DayGraphFragment : Fragment() {
                 "Average Heart Rate: $summary BPM"
             }
 
-            CoroutineScope(Dispatchers.Main).launch {
-                summaryText.text = summaryLabel
-            }
+            summaryText.text = summaryLabel
         }
     }
 

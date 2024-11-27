@@ -5,12 +5,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,14 +33,18 @@ class YearGraphFragment : Fragment() {
         database = FitnessDatabase.getDatabase(requireContext())
         dataType = arguments?.getString("dataType") ?: "steps"
 
-        setupAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            setupAdapter()
+        }
 
         return view
     }
 
-    private fun setupAdapter() {
+    private suspend fun setupAdapter() {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        val earliestYear = runBlocking { database.fitnessDao().getFirstEntryDate()?.let { getYearFromDate(it) } ?: currentYear }
+        val earliestYear = withContext(Dispatchers.IO) {
+            database.fitnessDao().getFirstEntryDate()?.let { getYearFromDate(it) } ?: currentYear
+        }
 
         val totalYears = (currentYear - earliestYear + 1).coerceAtLeast(1)
 
@@ -51,9 +58,11 @@ class YearGraphFragment : Fragment() {
                 SingleYearGraphFragment.newInstance(startDate.substring(0, 4).toInt(), dataType)
             }
         )
-        viewPager.adapter = adapter
 
-        viewPager.setCurrentItem(totalYears - 1, false)
+        withContext(Dispatchers.Main) {
+            viewPager.adapter = adapter
+            viewPager.setCurrentItem(totalYears - 1, false)
+        }
     }
 
     private fun getYearFromDate(date: String): Int {

@@ -1,10 +1,19 @@
 package com.example.safefitness.helpers
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessEntity
 import kotlinx.coroutines.CoroutineScope
@@ -12,31 +21,75 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-class SensorManagerHelper(private val context: Context) : SensorEventListener {
-    private val sensorManager: SensorManager =
-        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
+class SensorService : Service(), SensorEventListener {
 
-    private var heartRateSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
-    private var stepCounterSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+    private lateinit var sensorManager: SensorManager
+    private var heartRateSensor: Sensor? = null
+    private var stepCounterSensor: Sensor? = null
 
-    var onHeartRateChanged: ((Float) -> Unit)? = null
-    var onStepCountChanged: ((Int) -> Unit)? = null
+    private val fitnessDao by lazy {
+        FitnessDatabase.getDatabase(this).fitnessDao()
+    }
 
     private var initialSteps: Int? = null
     private var totalStepsForDay = 0
     private var stepBuffer = 0
     private var isBuffering = false
 
-    fun startListening() {
+    override fun onCreate() {
+        super.onCreate()
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        startListening()
+    }
+
+    private fun startListening() {
         heartRateSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
         stepCounterSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
     }
 
-    fun stopListening() {
+    private fun stopListening() {
         sensorManager.unregisterListener(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopListening()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val notification = createNotification()
+        startForeground(1, notification)
+        return START_STICKY
+    }
+
+    private fun createNotification(): Notification {
+        val notificationChannelId = "SENSOR_SERVICE_CHANNEL"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                notificationChannelId,
+                "Sensor Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+
+        val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
+        return notificationBuilder
+            .setContentTitle("SafeFitness")
+            .setContentText("Collecting fitness data")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .build()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -45,12 +98,14 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                 Sensor.TYPE_HEART_RATE -> {
                     val heartRate = it.values[0]
                     saveHeartRateToDatabase(heartRate)
-                    onHeartRateChanged?.invoke(heartRate)
                 }
                 Sensor.TYPE_STEP_COUNTER -> {
                     val currentSteps = it.values[0].toInt()
                     if (initialSteps == null) {
                         initialSteps = currentSteps
+                        saveInitialSteps(initialSteps!!)
+                    } else {
+                        initialSteps = getInitialSteps()
                     }
 
                     val todaySteps = currentSteps - (initialSteps ?: 0)
@@ -60,8 +115,6 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                         bufferSteps(addedSteps)
                         totalStepsForDay += addedSteps
                     }
-
-                    onStepCountChanged?.invoke(totalStepsForDay)
                 }
                 else -> {}
             }
@@ -94,7 +147,6 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
         }
     }
 
-
     private fun saveHeartRateToDatabase(heartRate: Float) {
         val currentTime = getCurrentTime()
         CoroutineScope(Dispatchers.IO).launch {
@@ -109,10 +161,19 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
         }
     }
 
-
     private fun getCurrentTime(): String {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun saveInitialSteps(steps: Int) {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("initial_steps", steps).apply()
+    }
+
+    private fun getInitialSteps(): Int? {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        return prefs.getInt("initial_steps", -1).takeIf { it != -1 }
+    }
 }

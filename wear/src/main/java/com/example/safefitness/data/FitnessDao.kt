@@ -16,9 +16,6 @@ interface FitnessDao {
     @Query("SELECT AVG(heartRate) FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL")
     suspend fun getAverageHeartRateForCurrentDay(currentDate: String): Float?
 
-    @Query("SELECT * FROM fitness_data ORDER BY date ASC")
-    suspend fun getAllData(): List<FitnessEntity>
-
     @Query("SELECT SUM(steps) FROM fitness_data WHERE date LIKE :currentDate || '%'")
     suspend fun getStepsForCurrentDay(currentDate: String): Int?
 
@@ -54,4 +51,8 @@ interface FitnessDao {
 
     @Query("UPDATE fitness_data SET batchNumber = :batchNumber WHERE id = :id")
     suspend fun updateBatchNumber(id: Int, batchNumber: Int)
+
+    @Query("SELECT heartRate FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
+    suspend fun getLastHeartRateForCurrentDay(currentDate: String): Float?
+
 }

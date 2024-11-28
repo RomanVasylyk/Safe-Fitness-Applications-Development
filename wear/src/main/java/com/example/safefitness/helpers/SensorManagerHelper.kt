@@ -89,7 +89,7 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
         CoroutineScope(Dispatchers.IO).launch {
             val exists = fitnessDao.dataExists(currentTime, steps, null)
             if (exists == 0) {
-                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = steps, heartRate = null))
+                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = steps, heartRate = null, isSynced = false))
             }
         }
     }
@@ -104,7 +104,7 @@ class SensorManagerHelper(private val context: Context) : SensorEventListener {
                     fitnessDao.updateHeartRateByTime(currentTime, heartRate)
                 }
             } else {
-                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate))
+                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = null, heartRate = heartRate, isSynced = false))
             }
         }
     }

@@ -52,7 +52,12 @@ class MainActivity : AppCompatActivity() {
         dataHandler = DataHandler(database.fitnessDao())
         graphManager = GraphManager()
         fitnessDao = database.fitnessDao()
-        wearDataListener = WearDataListener(dataHandler) { updateData() }
+
+        wearDataListener = WearDataListener(
+            dataHandler = dataHandler,
+            onDataUpdated = { updateData() },
+            context = this
+        )
         Wearable.getDataClient(this).addListener(wearDataListener)
 
         updateData()

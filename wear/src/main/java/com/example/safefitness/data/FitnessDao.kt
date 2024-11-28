@@ -7,8 +7,8 @@ import androidx.room.Query
 
 @Dao
 interface FitnessDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertData(fitnessEntity: FitnessEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertData(fitnessEntity: FitnessEntity): Long
 
     @Query("DELETE FROM fitness_data WHERE date < :sevenDaysAgo")
     suspend fun deleteOldData(sevenDaysAgo: String)
@@ -43,4 +43,15 @@ interface FitnessDao {
     @Query("UPDATE fitness_data SET heartRate = :heartRate WHERE date = :date")
     suspend fun updateHeartRateByTime(date: String, heartRate: Float)
 
+    @Query("SELECT * FROM fitness_data WHERE isSynced = 0 ORDER BY date ASC")
+    suspend fun getUnsyncedData(): List<FitnessEntity>
+
+    @Query("SELECT * FROM fitness_data WHERE batchNumber = :batchNumber")
+    suspend fun getDataByBatchNumber(batchNumber: Int): List<FitnessEntity>
+
+    @Query("UPDATE fitness_data SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markDataAsSynced(ids: List<Int>)
+
+    @Query("UPDATE fitness_data SET batchNumber = :batchNumber WHERE id = :id")
+    suspend fun updateBatchNumber(id: Int, batchNumber: Int)
 }

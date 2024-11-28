@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [FitnessEntity::class], version = 2)
+@Database(entities = [FitnessEntity::class], version = 5)
 abstract class FitnessDatabase : RoomDatabase() {
     abstract fun fitnessDao(): FitnessDao
 

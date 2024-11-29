@@ -1,7 +1,6 @@
 package com.example.safefitness.data
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +12,8 @@ class WearDataListener(
     private val onDataUpdated: () -> Unit,
     private val context: Context
 ) : DataClient.OnDataChangedListener {
+
+    private val dataResponder = DataResponder(context)
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         val eventsToProcess = mutableListOf<Pair<String, String>>()
@@ -39,13 +40,12 @@ class WearDataListener(
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     dataHandler.saveData(jsonData)
-                    Wearable.getDataClient(context).deleteDataItems(Uri.parse(dataPath))
+                    dataResponder.sendDataToWatch(dataPath, jsonData)
                     onDataUpdated()
                 } catch (e: Exception) {
-                    Log.e("WearDataListener", "Error saving data or deleting DataItem: ${e.message}", e)
+                    Log.e("WearDataListener", "Error saving data or responding to watch: ${e.message}", e)
                 }
             }
         }
     }
-
 }

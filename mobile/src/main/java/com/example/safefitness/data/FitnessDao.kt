@@ -2,11 +2,12 @@ package com.example.safefitness.data
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
 interface FitnessDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertData(data: FitnessEntity)
 
     @Query("SELECT * FROM fitness_data WHERE date LIKE :currentDate || '%'")

@@ -14,7 +14,6 @@ data class FitnessEntity(
     val date: String,
     val steps: Int?,
     val heartRate: Float?,
-    val isSynced: Boolean = false,//delete
-    val batchNumber: Int? = null//delete
+    val isSynced: Boolean = false
 )
 

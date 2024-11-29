@@ -19,13 +19,15 @@ interface FitnessDao {
     @Query("SELECT SUM(steps) FROM fitness_data WHERE date LIKE :currentDate || '%'")
     suspend fun getStepsForCurrentDay(currentDate: String): Int?
 
-    @Query("""
+    @Query(
+        """
     SELECT COUNT(*) 
     FROM fitness_data 
     WHERE date = :date AND 
           (steps = :steps OR (steps IS NULL AND :steps IS NULL)) AND 
           (heartRate = :heartRate OR (heartRate IS NULL AND :heartRate IS NULL))
-    """)
+    """
+    )
     suspend fun dataExists(date: String, steps: Int?, heartRate: Float?): Int
 
     @Query("SELECT * FROM fitness_data WHERE date = :time LIMIT 1")
@@ -40,16 +42,13 @@ interface FitnessDao {
     @Query("UPDATE fitness_data SET heartRate = :heartRate WHERE date = :date")
     suspend fun updateHeartRateByTime(date: String, heartRate: Float)
 
-    @Query("SELECT * FROM fitness_data ORDER BY date ASC")
-    suspend fun getAllDataSortedByDate(): List<FitnessEntity>
-
     @Query("UPDATE fitness_data SET isSynced = 1 WHERE id IN (:ids)")
     suspend fun markDataAsSynced(ids: List<Int>)
 
-    @Query("UPDATE fitness_data SET batchNumber = :batchNumber WHERE id = :id")
-    suspend fun updateBatchNumber(id: Int, batchNumber: Int)
-
     @Query("SELECT heartRate FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
     suspend fun getLastHeartRateForCurrentDay(currentDate: String): Float?
+
+    @Query("SELECT * FROM fitness_data WHERE isSynced = 0 ORDER BY date ASC")
+    suspend fun getUnsyncedData(): List<FitnessEntity>
 
 }

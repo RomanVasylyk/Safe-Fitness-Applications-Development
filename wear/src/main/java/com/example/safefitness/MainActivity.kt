@@ -11,6 +11,8 @@ import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.databinding.ActivityMainBinding
 import com.example.safefitness.helpers.PermissionManager
 import com.example.safefitness.helpers.SensorService
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,11 +25,16 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val syncInterval = 5000L
     private lateinit var permissionManager: PermissionManager
+    private lateinit var dataClient: DataClient
+    private lateinit var watchDataListener: WatchDataListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        dataClient = Wearable.getDataClient(this)
+        watchDataListener = WatchDataListener(this)
 
         val database = FitnessDatabase.getDatabase(this)
         fitnessDao = database.fitnessDao()
@@ -35,6 +42,7 @@ class MainActivity : Activity() {
         permissionManager = PermissionManager(this)
         permissionManager.requestPermissions()
 
+        dataClient.addListener(watchDataListener)
         deleteOldData()
 
         binding.btnStart.setOnClickListener {
@@ -83,7 +91,7 @@ class MainActivity : Activity() {
     private val syncRunnable = object : Runnable {
         override fun run() {
             CoroutineScope(Dispatchers.IO).launch {
-                dataSender.sendAllDataToPhone()
+                dataSender.sendUnsyncedDataToPhone()
             }
             handler.postDelayed(this, syncInterval)
         }
@@ -131,5 +139,6 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         stopSensorService()
+        dataClient.removeListener(watchDataListener)
     }
 }

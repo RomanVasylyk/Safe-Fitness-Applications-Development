@@ -40,11 +40,8 @@ interface FitnessDao {
     @Query("UPDATE fitness_data SET heartRate = :heartRate WHERE date = :date")
     suspend fun updateHeartRateByTime(date: String, heartRate: Float)
 
-    @Query("SELECT * FROM fitness_data WHERE isSynced = 0 ORDER BY date ASC")
-    suspend fun getUnsyncedData(): List<FitnessEntity>
-
-    @Query("SELECT * FROM fitness_data WHERE batchNumber = :batchNumber")
-    suspend fun getDataByBatchNumber(batchNumber: Int): List<FitnessEntity>
+    @Query("SELECT * FROM fitness_data ORDER BY date ASC")
+    suspend fun getAllDataSortedByDate(): List<FitnessEntity>
 
     @Query("UPDATE fitness_data SET isSynced = 1 WHERE id IN (:ids)")
     suspend fun markDataAsSynced(ids: List<Int>)

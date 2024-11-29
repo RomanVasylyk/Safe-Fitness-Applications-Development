@@ -11,7 +11,6 @@ import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.databinding.ActivityMainBinding
 import com.example.safefitness.helpers.PermissionManager
 import com.example.safefitness.helpers.SensorService
-import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,7 +23,6 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val syncInterval = 5000L
     private lateinit var permissionManager: PermissionManager
-    private lateinit var confirmationListener: ConfirmationListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,9 +34,6 @@ class MainActivity : Activity() {
         dataSender = DataSender(this)
         permissionManager = PermissionManager(this)
         permissionManager.requestPermissions()
-
-        confirmationListener = ConfirmationListener(fitnessDao)
-        Wearable.getMessageClient(this).addListener(confirmationListener)
 
         deleteOldData()
 
@@ -136,6 +131,5 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         stopSensorService()
-        Wearable.getMessageClient(this).removeListener(confirmationListener)
     }
 }

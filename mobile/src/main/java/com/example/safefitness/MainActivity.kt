@@ -86,8 +86,8 @@ class MainActivity : AppCompatActivity() {
             val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             val (stepsData, heartRateData) = dataHandler.getDailyAggregatedData(currentDate)
 
-            aggregatedSteps = stepsData
-            aggregatedHeartRate = heartRateData
+            aggregatedSteps = stepsData.sortedBy { it.first }
+            aggregatedHeartRate = heartRateData.sortedBy { it.first }
 
             val totalSteps = fitnessDao.getTotalStepsForCurrentDay(currentDate)
             val lastHeartRate = fitnessDao.getLastHeartRateForCurrentDay(currentDate)
@@ -107,23 +107,6 @@ class MainActivity : AppCompatActivity() {
                 graphManager.updateGraph(heartRateGraph, aggregatedHeartRate, "Heart Rate", "Time", "BPM", this@MainActivity)
             }
         }
-    }
-
-    private fun openFullScreenGraph(
-        dataType: String,
-        aggregatedData: List<Pair<String, Number>>,
-        title: String,
-        xAxisName: String,
-        yAxisName: String
-    ) {
-        val intent = Intent(this, FullScreenGraphActivity::class.java).apply {
-            putExtra("graphData", ArrayList(aggregatedData))
-            putExtra("dataType", dataType)
-            putExtra("title", title)
-            putExtra("xAxisName", xAxisName)
-            putExtra("yAxisName", yAxisName)
-        }
-        startActivity(intent)
     }
 
     override fun onDestroy() {

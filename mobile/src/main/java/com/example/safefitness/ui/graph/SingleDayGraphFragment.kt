@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.view.LineChartView
+import java.util.TreeMap
 
 class SingleDayGraphFragment : Fragment() {
 
@@ -72,7 +73,7 @@ class SingleDayGraphFragment : Fragment() {
     }
 
     private fun aggregateDataByHour(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
-        val aggregatedData = mutableMapOf<String, MutableList<Number>>()
+        val aggregatedData = TreeMap<String, MutableList<Number>>() // Використання TreeMap
 
         data.forEach { (time, value) ->
             val hour = time.split(":")[0]

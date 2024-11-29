@@ -4,9 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.safefitness.data.FitnessDatabase
 import com.google.android.gms.wearable.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,13 +14,15 @@ class DataSender(context: Context) {
     private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
 
     suspend fun sendAllDataToPhone() {
-        val dataList = withContext(Dispatchers.IO) { fitnessDao.getUnsyncedData() }
+        val dataList = withContext(Dispatchers.IO) {
+            fitnessDao.getAllDataSortedByDate()
+        }
+
         if (dataList.isNotEmpty()) {
             val batchSize = 50
             val batches = dataList.chunked(batchSize)
             batches.forEachIndexed { index, batch ->
                 val jsonArray = JSONArray()
-                val batchNumber = index
                 for (data in batch) {
                     val jsonObject = JSONObject()
                     jsonObject.put("date", data.date)
@@ -31,23 +31,19 @@ class DataSender(context: Context) {
                     jsonArray.put(jsonObject)
                 }
 
-                val path = "/data_batch_$batchNumber"
+                val timestamp = System.currentTimeMillis()
+                val path = "/fitness_data_$timestamp"
+
                 val putDataReq: PutDataRequest = PutDataMapRequest.create(path).apply {
                     dataMap.putString("fitnessData", jsonArray.toString())
                 }.asPutDataRequest()
 
                 dataClient.putDataItem(putDataReq).addOnSuccessListener {
-                    Log.d("DataSender", "Batch $batchNumber sent to phone successfully")
-                    CoroutineScope(Dispatchers.IO).launch {
-                        batch.forEach { data ->
-                            fitnessDao.updateBatchNumber(data.id, batchNumber)
-                        }
-                    }
+                    Log.d("DataSender", "Batch $index sent to phone successfully")
                 }.addOnFailureListener { e ->
-                    Log.e("DataSender", "Failed to send batch $batchNumber to phone", e)
+                    Log.e("DataSender", "Failed to send batch $index to phone", e)
                 }
             }
         }
     }
-
 }

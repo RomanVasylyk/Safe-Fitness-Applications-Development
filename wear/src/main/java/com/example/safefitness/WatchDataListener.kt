@@ -17,7 +17,7 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
         dataEvents.use { buffer ->
             buffer.forEach { event ->
                 if (event.type == DataEvent.TYPE_CHANGED &&
-                    event.dataItem.uri.path?.startsWith("/fitness_data_") == true
+                    event.dataItem.uri.path?.startsWith("/fitness_data_back") == true
                 ) {
                     val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
                     val jsonData = dataMapItem.dataMap.getString("fitnessData")
@@ -50,8 +50,8 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
                 }
 
                 if (idsToMarkSynced.isNotEmpty()) {
+                    Log.d("WatchDataListener", "Marking data as synced: $idsToMarkSynced")
                     fitnessDao.markDataAsSynced(idsToMarkSynced)
-                    Log.d("WatchDataListener", "Marked data as synced: $idsToMarkSynced")
                 }
             } catch (e: Exception) {
                 Log.e("WatchDataListener", "Error handling received data: ${e.message}", e)

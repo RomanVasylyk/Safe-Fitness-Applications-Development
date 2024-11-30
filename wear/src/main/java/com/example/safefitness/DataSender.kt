@@ -4,9 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.safefitness.data.FitnessDatabase
 import com.google.android.gms.wearable.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -45,9 +43,6 @@ class DataSender(context: Context) {
 
                 dataClient.putDataItem(putDataReq).addOnSuccessListener {
                     Log.d("DataSender", "Batch $index sent to phone successfully")
-                    CoroutineScope(Dispatchers.IO).launch {
-                        fitnessDao.markDataAsSynced(idsToMarkSynced)
-                    }
                 }.addOnFailureListener { e ->
                     Log.e("DataSender", "Failed to send batch $index to phone", e)
                 }

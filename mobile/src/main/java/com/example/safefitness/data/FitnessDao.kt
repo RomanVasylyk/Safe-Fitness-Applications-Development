@@ -19,13 +19,15 @@ interface FitnessDao {
     @Query("SELECT heartRate FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
     suspend fun getLastHeartRateForCurrentDay(currentDate: String): Float?
 
-    @Query("""
+    @Query(
+        """
     SELECT COUNT(*) 
     FROM fitness_data 
-    WHERE date = :date 
-      AND (steps = :steps OR (steps IS NULL AND :steps IS NULL))
-      AND (heartRate = :heartRate OR (heartRate IS NULL AND :heartRate IS NULL))
-""")
+    WHERE date = :date AND 
+          (steps = :steps OR (steps IS NULL AND :steps IS NULL)) AND 
+          (heartRate = :heartRate OR (heartRate IS NULL AND :heartRate IS NULL))
+    """
+    )
     suspend fun dataExists(date: String, steps: Int?, heartRate: Float?): Int
 
     @Query("DELETE FROM fitness_data")

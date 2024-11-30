@@ -1,5 +1,6 @@
 package com.example.safefitness.data
 
+import android.util.Log
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -43,7 +44,7 @@ interface FitnessDao {
     suspend fun updateHeartRateByTime(date: String, heartRate: Float)
 
     @Query("UPDATE fitness_data SET isSynced = 1 WHERE id IN (:ids)")
-    suspend fun markDataAsSynced(ids: List<Int>)
+    suspend fun markDataAsSynced(ids: List<Int>): Int
 
     @Query("SELECT heartRate FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
     suspend fun getLastHeartRateForCurrentDay(currentDate: String): Float?

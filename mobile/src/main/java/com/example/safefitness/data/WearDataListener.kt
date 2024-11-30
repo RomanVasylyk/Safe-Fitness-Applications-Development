@@ -36,11 +36,11 @@ class WearDataListener(
             }
         }
 
-        eventsToProcess.forEach { (dataPath, jsonData) ->
+        eventsToProcess.forEach { (_, jsonData) ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     dataHandler.saveData(jsonData)
-                    dataResponder.sendDataToWatch(dataPath, jsonData)
+                    dataResponder.sendDataToWatch("fitness_data_back", jsonData) 
                     onDataUpdated()
                 } catch (e: Exception) {
                     Log.e("WearDataListener", "Error saving data or responding to watch: ${e.message}", e)

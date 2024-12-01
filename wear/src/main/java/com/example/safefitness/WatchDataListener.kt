@@ -35,7 +35,6 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val jsonArray = JSONArray(jsonData)
-                val idsToMarkSynced = mutableListOf<Int>()
 
                 for (i in 0 until jsonArray.length()) {
                     val jsonObject = jsonArray.getJSONObject(i)
@@ -44,14 +43,13 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
                     val heartRate = jsonObject.optDouble("heartRate", -1.0).takeIf { it >= 0 }?.toFloat()
 
                     val existingData = fitnessDao.getEntryByDate(date)
-                    if (existingData != null && existingData.steps == steps && existingData.heartRate == heartRate) {
-                        idsToMarkSynced.add(existingData.id)
+                    if (existingData != null &&
+                        (existingData.steps == steps || steps == null) &&
+                        (existingData.heartRate == heartRate || heartRate == null)
+                    ) {
+                        Log.d("WatchDataListener", "Marking data as synced: $existingData")
+                        fitnessDao.markDataAsSynced(listOf(existingData.id))
                     }
-                }
-
-                if (idsToMarkSynced.isNotEmpty()) {
-                    Log.d("WatchDataListener", "Marking data as synced: $idsToMarkSynced")
-                    fitnessDao.markDataAsSynced(idsToMarkSynced)
                 }
             } catch (e: Exception) {
                 Log.e("WatchDataListener", "Error handling received data: ${e.message}", e)

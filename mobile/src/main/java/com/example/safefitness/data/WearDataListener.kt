@@ -6,11 +6,14 @@ import com.google.android.gms.wearable.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class WearDataListener(
     private val dataHandler: DataHandler,
     private val onDataUpdated: () -> Unit,
-    private val context: Context
+    private val context: Context,
+    private val mutex: Mutex = Mutex()
 ) : DataClient.OnDataChangedListener {
 
     private val dataResponder = DataResponder(context)
@@ -39,8 +42,10 @@ class WearDataListener(
         eventsToProcess.forEach { (_, jsonData) ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    dataHandler.saveData(jsonData)
-                    dataResponder.sendDataToWatch("fitness_data_back", jsonData) 
+                    mutex.withLock {
+                        dataHandler.saveData(jsonData)
+                    }
+                    dataResponder.sendDataToWatch("fitness_data_back", jsonData)
                     onDataUpdated()
                 } catch (e: Exception) {
                     Log.e("WearDataListener", "Error saving data or responding to watch: ${e.message}", e)

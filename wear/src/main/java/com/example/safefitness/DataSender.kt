@@ -10,9 +10,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.google.android.gms.tasks.Tasks
+import java.util.concurrent.TimeUnit
 
 class DataSender(context: Context) {
     private val dataClient: DataClient = Wearable.getDataClient(context)
+    private val nodeClient: NodeClient = Wearable.getNodeClient(context)
     private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
 
     private var lastSendTime: Long = 0
@@ -24,6 +27,14 @@ class DataSender(context: Context) {
 
             if (currentTime - lastSendTime < 5000) {
                 Log.d("DataSender", "Skipping data send: waiting 5 seconds")
+                return
+            }
+
+            val connectedNodes = withContext(Dispatchers.IO) {
+                getConnectedNodes()
+            }
+            if (connectedNodes.isEmpty()) {
+                Log.d("DataSender", "No connected nodes. Skipping data send.")
                 return
             }
 
@@ -67,5 +78,16 @@ class DataSender(context: Context) {
             }
         }
     }
-}
 
+    private suspend fun getConnectedNodes(): List<Node> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = Tasks.await(nodeClient.connectedNodes, 5, TimeUnit.SECONDS)
+                result
+            } catch (e: Exception) {
+                Log.e("DataSender", "Error checking connected nodes: ${e.message}", e)
+                emptyList<Node>()
+            }
+        }
+    }
+}

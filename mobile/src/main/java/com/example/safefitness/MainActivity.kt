@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
 
             runOnUiThread {
                 totalStepsText.text = "Total Steps: $totalSteps"
-                lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate ?: "N/A"} bpm"
+                lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate?.toInt() ?: "N/A"} bpm"
 
                 avgHeartRateText.text = "Avg: ${avgHeartRate?.toInt() ?: "N/A"} bpm"
                 minHeartRateText.text = "Min: ${minHeartRate?.toInt() ?: "N/A"} bpm"

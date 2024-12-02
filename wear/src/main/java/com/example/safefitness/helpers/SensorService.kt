@@ -12,15 +12,13 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessEntity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,13 +34,16 @@ class SensorService : Service(), SensorEventListener {
     }
 
     private var initialSteps: Int? = null
+    private var initialStepsDate: String? = null
     private var totalStepsForDay = 0
-    private var stepBuffer = 0
-    private var isBuffering = false
-    private var lastSensorStepCount: Int? = null
-    private var lastStepUpdateTime: Long = System.currentTimeMillis()
+
+    private val stepBuffer = mutableListOf<Int>()
     private val heartRateBuffer = mutableListOf<Float>()
-    private var isHeartRateBuffering = false
+
+    private val stepMutex = Mutex()
+    private val heartRateMutex = Mutex()
+
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
@@ -50,7 +51,6 @@ class SensorService : Service(), SensorEventListener {
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
         stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         startListening()
-        validateStepCount()
     }
 
     private fun startListening() {
@@ -65,6 +65,7 @@ class SensorService : Service(), SensorEventListener {
     override fun onDestroy() {
         super.onDestroy()
         stopListening()
+        serviceScope.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -103,24 +104,26 @@ class SensorService : Service(), SensorEventListener {
             when (it.sensor.type) {
                 Sensor.TYPE_STEP_COUNTER -> {
                     val currentSteps = it.values[0].toInt()
-                    if (lastSensorStepCount != currentSteps) {
-                        lastSensorStepCount = currentSteps
-                        lastStepUpdateTime = System.currentTimeMillis()
-                    }
+                    val currentDate = getCurrentDate()
 
-                    if (initialSteps == null) {
+                    val (savedInitialSteps, savedDate) = getInitialSteps()
+
+                    if (savedInitialSteps == null || savedDate != currentDate) {
                         initialSteps = currentSteps
-                        saveInitialSteps(initialSteps!!)
+                        initialStepsDate = currentDate
+                        saveInitialSteps(initialSteps!!, initialStepsDate!!)
+                        totalStepsForDay = 0
                     } else {
-                        initialSteps = getInitialSteps()
+                        initialSteps = savedInitialSteps
+                        initialStepsDate = savedDate
                     }
 
                     val todaySteps = currentSteps - (initialSteps ?: 0)
                     val addedSteps = todaySteps - totalStepsForDay
 
                     if (addedSteps > 0) {
-                        bufferSteps(addedSteps)
                         totalStepsForDay += addedSteps
+                        bufferSteps(addedSteps)
                     }
                 }
                 Sensor.TYPE_HEART_RATE -> {
@@ -133,96 +136,89 @@ class SensorService : Service(), SensorEventListener {
     }
 
     private fun bufferHeartRate(heartRate: Float) {
-        synchronized(heartRateBuffer) {
-            heartRateBuffer.add(heartRate)
-        }
+        serviceScope.launch {
+            heartRateMutex.withLock {
+                heartRateBuffer.add(heartRate)
+            }
+            delay(5000)
 
-        if (!isHeartRateBuffering) {
-            isHeartRateBuffering = true
-            CoroutineScope(Dispatchers.IO).launch {
-                delay(5000)
-                synchronized(heartRateBuffer) {
-                    if (heartRateBuffer.isNotEmpty()) {
-                        val averageHeartRate = heartRateBuffer.average().toFloat()
-                        saveHeartRateToDatabase(averageHeartRate)
-                        heartRateBuffer.clear()
-                    }
-                    isHeartRateBuffering = false
+            val averageHeartRate: Float?
+            heartRateMutex.withLock {
+                if (heartRateBuffer.isNotEmpty()) {
+                    averageHeartRate = heartRateBuffer.average().toFloat()
+                    heartRateBuffer.clear()
+                } else {
+                    averageHeartRate = null
                 }
+            }
+
+            averageHeartRate?.let {
+                saveHeartRateToDatabase(it)
             }
         }
     }
 
     private fun bufferSteps(steps: Int) {
-        stepBuffer += steps
+        serviceScope.launch {
+            stepMutex.withLock {
+                stepBuffer.add(steps)
+            }
+            delay(5000)
 
-        if (!isBuffering) {
-            isBuffering = true
-            CoroutineScope(Dispatchers.IO).launch {
-                delay(5000)
-                if (stepBuffer > 0) {
-                    saveStepsToDatabase(stepBuffer)
-                    stepBuffer = 0
-                }
-                isBuffering = false
+            val totalBufferedSteps: Int
+            stepMutex.withLock {
+                totalBufferedSteps = stepBuffer.sum()
+                stepBuffer.clear()
+            }
+
+            if (totalBufferedSteps > 0) {
+                saveStepsToDatabase(totalBufferedSteps)
             }
         }
     }
-
-    private fun validateStepCount() {
-        CoroutineScope(Dispatchers.IO).launch {
-            while (true) {
-                delay(300000)
-                val currentTime = System.currentTimeMillis()
-                val elapsedTime = currentTime - lastStepUpdateTime
-
-                if (elapsedTime >= 300000) {
-                    try {
-                        val currentSteps = lastSensorStepCount ?: return@launch
-                        val todaySteps = currentSteps - (getInitialSteps() ?: 0)
-                        val savedSteps = fitnessDao.getStepsForCurrentDay(getCurrentTime()) ?: 0
-                        val missingSteps = todaySteps - savedSteps
-
-                        if (missingSteps > 0) {
-                            Log.d("SensorService", "Found missing steps after 5 min idle: $missingSteps")
-                            saveStepsToDatabase(missingSteps)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("SensorService", "Error in step validation: ${e.message}", e)
-                    }
-                }
-            }
-        }
-    }
-
 
     private fun saveStepsToDatabase(steps: Int) {
         val currentTime = getCurrentTime()
-        CoroutineScope(Dispatchers.IO).launch {
-            val exists = fitnessDao.dataExists(currentTime, steps, null)
-            if (exists == 0) {
-                fitnessDao.insertData(FitnessEntity(date = currentTime, steps = steps, heartRate = null, isSynced = false))
+        serviceScope.launch {
+            try {
+                val exists = fitnessDao.dataExists(currentTime, steps, null)
+                if (exists == 0) {
+                    fitnessDao.insertData(
+                        FitnessEntity(
+                            date = currentTime,
+                            steps = steps,
+                            heartRate = null,
+                            isSynced = false
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     private fun saveHeartRateToDatabase(heartRate: Float) {
         val currentTime = getCurrentTime()
-        CoroutineScope(Dispatchers.IO).launch {
-            val existingEntry = fitnessDao.getEntryByDate(currentTime)
-            if (existingEntry != null) {
-                if (existingEntry.heartRate != heartRate) {
-                    fitnessDao.updateHeartRateByTime(currentTime, heartRate)
-                }
-            } else {
-                fitnessDao.insertData(
-                    FitnessEntity(
-                        date = currentTime,
-                        steps = null,
-                        heartRate = heartRate,
-                        isSynced = false
+        serviceScope.launch {
+            try {
+                val existingEntry = fitnessDao.getEntryByDate(currentTime)
+                if (existingEntry != null) {
+                    if (existingEntry.heartRate != heartRate) {
+                        fitnessDao.updateHeartRateByTime(currentTime, heartRate)
+                    }
+                } else {
+                    fitnessDao.insertData(
+                        FitnessEntity(
+                            date = currentTime,
+                            steps = null,
+                            heartRate = heartRate,
+                            isSynced = false
+                        )
                     )
-                )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -231,15 +227,21 @@ class SensorService : Service(), SensorEventListener {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-
-    private fun saveInitialSteps(steps: Int) {
-        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("initial_steps", steps).apply()
+    private fun getCurrentDate(): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
 
-    private fun getInitialSteps(): Int? {
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun saveInitialSteps(steps: Int, date: String) {
         val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
-        return prefs.getInt("initial_steps", -1).takeIf { it != -1 }
+        prefs.edit().putInt("initial_steps", steps).putString("initial_date", date).apply()
+    }
+
+    private fun getInitialSteps(): Pair<Int?, String?> {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        val steps = prefs.getInt("initial_steps", -1).takeIf { it != -1 }
+        val date = prefs.getString("initial_date", null)
+        return Pair(steps, date)
     }
 }

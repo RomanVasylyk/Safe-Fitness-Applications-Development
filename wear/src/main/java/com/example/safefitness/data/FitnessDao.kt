@@ -51,4 +51,17 @@ interface FitnessDao {
     @Query("SELECT * FROM fitness_data WHERE isSynced = 0 ORDER BY date ASC")
     suspend fun getUnsyncedData(): List<FitnessEntity>
 
+    suspend fun insertOrUpdateEntry(entity: FitnessEntity) {
+        val existingEntry = getEntryByDate(entity.date)
+        if (existingEntry != null) {
+            if (entity.steps != null && existingEntry.steps != entity.steps) {
+                updateStepsByTime(entity.date, entity.steps)
+            }
+            if (entity.heartRate != null && existingEntry.heartRate != entity.heartRate) {
+                updateHeartRateByTime(entity.date, entity.heartRate)
+            }
+        } else {
+            insertData(entity)
+        }
+    }
 }

@@ -39,10 +39,10 @@ class SensorService : Service(), SensorEventListener {
 
     private val stepBuffer = mutableListOf<Int>()
     private val heartRateBuffer = mutableListOf<Float>()
-
+    private var isBufferingHeartRate = false
     private val stepMutex = Mutex()
     private val heartRateMutex = Mutex()
-
+    private var isBufferingSteps = false
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
@@ -76,7 +76,6 @@ class SensorService : Service(), SensorEventListener {
 
     private fun createNotification(): Notification {
         val notificationChannelId = "SENSOR_SERVICE_CHANNEL"
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 notificationChannelId,
@@ -107,23 +106,26 @@ class SensorService : Service(), SensorEventListener {
                     val currentDate = getCurrentDate()
 
                     val (savedInitialSteps, savedDate) = getInitialSteps()
+                    val savedLastSensorSteps = getLastSensorSteps()
 
                     if (savedInitialSteps == null || savedDate != currentDate) {
                         initialSteps = currentSteps
                         initialStepsDate = currentDate
                         saveInitialSteps(initialSteps!!, initialStepsDate!!)
                         totalStepsForDay = 0
+                        saveLastSensorSteps(currentSteps)
                     } else {
                         initialSteps = savedInitialSteps
                         initialStepsDate = savedDate
                     }
 
-                    val todaySteps = currentSteps - (initialSteps ?: 0)
-                    val addedSteps = todaySteps - totalStepsForDay
+                    val lastSensorSteps = savedLastSensorSteps ?: initialSteps ?: currentSteps
+                    val increment = currentSteps - lastSensorSteps
 
-                    if (addedSteps > 0) {
-                        totalStepsForDay += addedSteps
-                        bufferSteps(addedSteps)
+                    if (increment > 0) {
+                        totalStepsForDay += increment
+                        bufferSteps(increment)
+                        saveLastSensorSteps(currentSteps)
                     }
                 }
                 Sensor.TYPE_HEART_RATE -> {
@@ -140,20 +142,24 @@ class SensorService : Service(), SensorEventListener {
             heartRateMutex.withLock {
                 heartRateBuffer.add(heartRate)
             }
-            delay(5000)
 
-            val averageHeartRate: Float?
-            heartRateMutex.withLock {
-                if (heartRateBuffer.isNotEmpty()) {
-                    averageHeartRate = heartRateBuffer.average().toFloat()
-                    heartRateBuffer.clear()
-                } else {
-                    averageHeartRate = null
+            if (!isBufferingHeartRate) {
+                isBufferingHeartRate = true
+                delay(5000)
+
+                val averageHeartRate: Float?
+                heartRateMutex.withLock {
+                    averageHeartRate = if (heartRateBuffer.isNotEmpty()) {
+                        heartRateBuffer.average().toFloat().also { heartRateBuffer.clear() }
+                    } else {
+                        null
+                    }
                 }
-            }
 
-            averageHeartRate?.let {
-                saveHeartRateToDatabase(it)
+                averageHeartRate?.let {
+                    saveHeartRateToDatabase(it)
+                }
+                isBufferingHeartRate = false
             }
         }
     }
@@ -163,16 +169,21 @@ class SensorService : Service(), SensorEventListener {
             stepMutex.withLock {
                 stepBuffer.add(steps)
             }
-            delay(5000)
 
-            val totalBufferedSteps: Int
-            stepMutex.withLock {
-                totalBufferedSteps = stepBuffer.sum()
-                stepBuffer.clear()
-            }
+            if (!isBufferingSteps) {
+                isBufferingSteps = true
+                delay(5000)
 
-            if (totalBufferedSteps > 0) {
-                saveStepsToDatabase(totalBufferedSteps)
+                val totalBufferedSteps: Int
+                stepMutex.withLock {
+                    totalBufferedSteps = stepBuffer.sum()
+                    stepBuffer.clear()
+                }
+
+                if (totalBufferedSteps > 0) {
+                    saveStepsToDatabase(totalBufferedSteps)
+                }
+                isBufferingSteps = false
             }
         }
     }
@@ -181,17 +192,13 @@ class SensorService : Service(), SensorEventListener {
         val currentTime = getCurrentTime()
         serviceScope.launch {
             try {
-                val exists = fitnessDao.dataExists(currentTime, steps, null)
-                if (exists == 0) {
-                    fitnessDao.insertData(
-                        FitnessEntity(
-                            date = currentTime,
-                            steps = steps,
-                            heartRate = null,
-                            isSynced = false
-                        )
-                    )
-                }
+                val newEntry = FitnessEntity(
+                    date = currentTime,
+                    steps = steps,
+                    heartRate = null,
+                    isSynced = false
+                )
+                fitnessDao.insertOrUpdateEntry(newEntry)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -202,21 +209,13 @@ class SensorService : Service(), SensorEventListener {
         val currentTime = getCurrentTime()
         serviceScope.launch {
             try {
-                val existingEntry = fitnessDao.getEntryByDate(currentTime)
-                if (existingEntry != null) {
-                    if (existingEntry.heartRate != heartRate) {
-                        fitnessDao.updateHeartRateByTime(currentTime, heartRate)
-                    }
-                } else {
-                    fitnessDao.insertData(
-                        FitnessEntity(
-                            date = currentTime,
-                            steps = null,
-                            heartRate = heartRate,
-                            isSynced = false
-                        )
-                    )
-                }
+                val newEntry = FitnessEntity(
+                    date = currentTime,
+                    steps = null,
+                    heartRate = heartRate,
+                    isSynced = false
+                )
+                fitnessDao.insertOrUpdateEntry(newEntry)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -243,5 +242,16 @@ class SensorService : Service(), SensorEventListener {
         val steps = prefs.getInt("initial_steps", -1).takeIf { it != -1 }
         val date = prefs.getString("initial_date", null)
         return Pair(steps, date)
+    }
+
+    private fun saveLastSensorSteps(steps: Int) {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("last_sensor_steps", steps).apply()
+    }
+
+    private fun getLastSensorSteps(): Int? {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        val steps = prefs.getInt("last_sensor_steps", -1)
+        return if (steps != -1) steps else null
     }
 }

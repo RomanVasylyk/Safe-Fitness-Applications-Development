@@ -1,6 +1,5 @@
 package com.example.safefitness
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
@@ -119,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             val fitnessDao = FitnessDatabase.getDatabase(this@MainActivity).fitnessDao()
 
             val calendar = Calendar.getInstance().apply {
-                set(Calendar.YEAR, 2024)
+                set(Calendar.YEAR, 2023)
                 set(Calendar.MONTH, Calendar.JANUARY)
                 set(Calendar.DAY_OF_MONTH, 1)
                 set(Calendar.HOUR_OF_DAY, 0)

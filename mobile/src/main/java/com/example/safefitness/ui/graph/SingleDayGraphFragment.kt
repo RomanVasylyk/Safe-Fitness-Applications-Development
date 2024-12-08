@@ -10,7 +10,6 @@ import com.example.safefitness.utils.GraphManager
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,7 +72,7 @@ class SingleDayGraphFragment : Fragment() {
     }
 
     private fun aggregateDataByHour(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
-        val aggregatedData = TreeMap<String, MutableList<Number>>() // Використання TreeMap
+        val aggregatedData = TreeMap<String, MutableList<Number>>()
 
         data.forEach { (time, value) ->
             val hour = time.split(":")[0]

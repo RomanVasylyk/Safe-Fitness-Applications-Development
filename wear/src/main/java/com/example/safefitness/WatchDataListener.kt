@@ -48,7 +48,7 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
                         (existingData.heartRate == heartRate || heartRate == null)
                     ) {
                         Log.d("WatchDataListener", "Marking data as synced: $existingData")
-                        fitnessDao.markDataAsSynced(listOf(existingData.id))
+                        fitnessDao.markDataAsSyncedWithDuplicates(listOf(existingData.id))
                     }
                 }
             } catch (e: Exception) {

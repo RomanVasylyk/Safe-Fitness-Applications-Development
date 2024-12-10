@@ -45,6 +45,23 @@ interface FitnessDao {
     @Query("UPDATE fitness_data SET isSynced = 1 WHERE id IN (:ids)")
     suspend fun markDataAsSynced(ids: List<Int>): Int
 
+    @Query("""
+        UPDATE fitness_data 
+        SET isSynced = :isSynced 
+        WHERE strftime('%Y-%m-%d %H:%M:%S', date) = (
+            SELECT strftime('%Y-%m-%d %H:%M:%S', date) 
+            FROM fitness_data 
+            WHERE id = :id LIMIT 1
+        )
+    """)
+    suspend fun markDataAsSyncedForSameTime(id: Int, isSynced: Int = 1)
+
+    suspend fun markDataAsSyncedWithDuplicates(ids: List<Int>, isSynced: Int = 1) {
+        for (id in ids) {
+            markDataAsSyncedForSameTime(id, isSynced)
+        }
+    }
+
     @Query("SELECT heartRate FROM fitness_data WHERE date LIKE :currentDate || '%' AND heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
     suspend fun getLastHeartRateForCurrentDay(currentDate: String): Float?
 

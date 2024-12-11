@@ -6,51 +6,51 @@ import com.google.android.gms.wearable.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class WearDataListener(
     private val dataHandler: DataHandler,
     private val onDataUpdated: () -> Unit,
-    private val context: Context,
-    private val mutex: Mutex = Mutex()
+    private val context: Context
 ) : DataClient.OnDataChangedListener {
 
-    private val dataResponder = DataResponder(context)
-
     override fun onDataChanged(dataEvents: DataEventBuffer) {
-        val eventsToProcess = mutableListOf<Pair<String, String>>()
-
         dataEvents.use { buffer ->
-            buffer.forEach { event ->
-                try {
-                    if (event.type == DataEvent.TYPE_CHANGED &&
-                        event.dataItem.uri.path?.startsWith("/fitness_data_") == true
-                    ) {
-                        val dataPath = event.dataItem.uri.path ?: return@forEach
-                        val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
-                        val jsonData = dataMapItem.dataMap.getString("fitnessData") ?: return@forEach
+            for (event in buffer) {
+                if (event.type == DataEvent.TYPE_CHANGED &&
+                    event.dataItem.uri.path?.startsWith("/fitness_data_batch_") == true
+                ) {
+                    val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
+                    val jsonData = dataMapItem.dataMap.getString("fitnessData")
+                    val batchId = dataMapItem.dataMap.getInt("batchId", -1)
 
-                        eventsToProcess.add(Pair(dataPath, jsonData))
+                    if (jsonData != null && batchId != -1) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                dataHandler.saveData(jsonData)
+                                confirmBatchReceived(batchId)
+                                onDataUpdated()
+                            } catch (e: Exception) {
+                                Log.e("WearDataListener", "Error saving data: ${e.message}", e)
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e("WearDataListener", "Error processing DataEvent: ${e.message}", e)
                 }
             }
         }
+    }
 
-        eventsToProcess.forEach { (_, jsonData) ->
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    mutex.withLock {
-                        dataHandler.saveData(jsonData)
-                    }
-                    dataResponder.sendDataToWatch("fitness_data_back", jsonData)
-                    onDataUpdated()
-                } catch (e: Exception) {
-                    Log.e("WearDataListener", "Error saving data or responding to watch: ${e.message}", e)
-                }
+    private fun confirmBatchReceived(batchId: Int) {
+        val path = "/fitness_data_confirmed_$batchId"
+        val putDataReq = PutDataMapRequest.create(path).apply {
+            dataMap.putInt("batchId", batchId)
+        }.asPutDataRequest()
+
+        Wearable.getDataClient(context).putDataItem(putDataReq)
+            .addOnSuccessListener {
+                Log.d("WearDataListener", "Confirmed batch $batchId to watch")
             }
-        }
+            .addOnFailureListener { e ->
+                Log.e("WearDataListener", "Failed to confirm batch $batchId", e)
+            }
     }
 }

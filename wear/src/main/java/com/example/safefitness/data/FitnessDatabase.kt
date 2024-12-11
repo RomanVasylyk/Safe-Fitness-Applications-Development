@@ -5,9 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [FitnessEntity::class], version = 7)
+@Database(entities = [FitnessEntity::class, SentBatchEntity::class], version = 8, exportSchema = false)
 abstract class FitnessDatabase : RoomDatabase() {
     abstract fun fitnessDao(): FitnessDao
+    abstract fun sentBatchDao(): SentBatchDao
 
     companion object {
         @Volatile

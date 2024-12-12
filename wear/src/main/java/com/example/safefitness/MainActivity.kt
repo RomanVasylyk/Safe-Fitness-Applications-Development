@@ -20,16 +20,21 @@ import java.util.*
 
 class MainActivity : Activity() {
     private lateinit var binding: ActivityMainBinding
-    private lateinit var dataSender: DataSender
     private lateinit var fitnessDao: FitnessDao
-    private val handler = Handler(Looper.getMainLooper())
-    private val syncInterval = 5000L
+    private lateinit var dataSender: DataSender
     private lateinit var permissionManager: PermissionManager
     private lateinit var dataClient: DataClient
     private lateinit var watchDataListener: WatchDataListener
+    private val handler = Handler(Looper.getMainLooper())
+    private val syncInterval = 5000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initializeComponents()
+        setupListeners()
+    }
+
+    private fun initializeComponents() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -39,29 +44,43 @@ class MainActivity : Activity() {
         val database = FitnessDatabase.getDatabase(this)
         fitnessDao = database.fitnessDao()
         dataSender = DataSender(this)
+
         permissionManager = PermissionManager(this)
         permissionManager.requestPermissions()
 
         dataClient.addListener(watchDataListener)
         deleteOldData()
+    }
 
+    private fun setupListeners() {
         binding.btnStart.setOnClickListener {
-            startSensorService()
-            startSyncingData()
-            startUpdatingSteps()
-            binding.btnStart.isEnabled = false
-            binding.btnStop.isEnabled = true
-            Toast.makeText(this, "Started Tracking", Toast.LENGTH_SHORT).show()
+            startTracking()
         }
 
         binding.btnStop.setOnClickListener {
-            stopSensorService()
-            stopSyncingData()
-            stopUpdatingSteps()
-            binding.btnStart.isEnabled = true
-            binding.btnStop.isEnabled = false
-            Toast.makeText(this, "Stopped Tracking", Toast.LENGTH_SHORT).show()
+            stopTracking()
         }
+    }
+
+    private fun startTracking() {
+        startSensorService()
+        startSyncingData()
+        startUpdatingSteps()
+        updateUI(isTracking = true)
+        showToast("Started Tracking")
+    }
+
+    private fun stopTracking() {
+        stopSensorService()
+        stopSyncingData()
+        stopUpdatingSteps()
+        updateUI(isTracking = false)
+        showToast("Stopped Tracking")
+    }
+
+    private fun updateUI(isTracking: Boolean) {
+        binding.btnStart.isEnabled = !isTracking
+        binding.btnStop.isEnabled = isTracking
     }
 
     private fun startSensorService() {
@@ -80,12 +99,12 @@ class MainActivity : Activity() {
 
     private fun startSyncingData() {
         handler.post(syncRunnable)
-        Toast.makeText(this, "Data syncing started", Toast.LENGTH_SHORT).show()
+        showToast("Data syncing started")
     }
 
     private fun stopSyncingData() {
         handler.removeCallbacks(syncRunnable)
-        Toast.makeText(this, "Data syncing stopped", Toast.LENGTH_SHORT).show()
+        showToast("Data syncing stopped")
     }
 
     private val syncRunnable = object : Runnable {
@@ -123,17 +142,22 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun deleteOldData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val calendar = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -7)
+            }
+            val sevenDaysAgo = android.icu.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+            fitnessDao.deleteOldData(sevenDaysAgo)
+        }
+    }
+
     private fun getCurrentDate(): String {
         return android.icu.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
 
-    private fun deleteOldData() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, -7)
-            val sevenDaysAgo = android.icu.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
-            fitnessDao.deleteOldData(sevenDaysAgo)
-        }
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {

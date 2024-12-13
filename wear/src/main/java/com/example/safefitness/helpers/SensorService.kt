@@ -12,6 +12,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
@@ -33,6 +34,8 @@ class SensorService : Service(), SensorEventListener {
         FitnessDatabase.getDatabase(this).fitnessDao()
     }
 
+    private var wakeLock: PowerManager.WakeLock? = null
+
     private var initialSteps: Int? = null
     private var initialStepsDate: String? = null
     private var totalStepsForDay = 0
@@ -50,6 +53,7 @@ class SensorService : Service(), SensorEventListener {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
         stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        acquireWakeLock()
         startListening()
     }
 
@@ -65,6 +69,7 @@ class SensorService : Service(), SensorEventListener {
     override fun onDestroy() {
         super.onDestroy()
         stopListening()
+        releaseWakeLock()
         serviceScope.cancel()
     }
 
@@ -209,10 +214,12 @@ class SensorService : Service(), SensorEventListener {
         val currentTime = getCurrentTime()
         serviceScope.launch {
             try {
+                val roundedHeartRate = Math.round(heartRate).toFloat()
+
                 val newEntry = FitnessEntity(
                     date = currentTime,
                     steps = null,
-                    heartRate = heartRate,
+                    heartRate = roundedHeartRate,
                     isSynced = false
                 )
                 fitnessDao.insertOrUpdateEntry(newEntry)
@@ -254,4 +261,17 @@ class SensorService : Service(), SensorEventListener {
         val steps = prefs.getInt("last_sensor_steps", -1)
         return if (steps != -1) steps else null
     }
+
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SafeFitness:WakeLock")
+        wakeLock?.acquire()
+    }
+
+    private fun releaseWakeLock() {
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
+        }
+    }
+
 }

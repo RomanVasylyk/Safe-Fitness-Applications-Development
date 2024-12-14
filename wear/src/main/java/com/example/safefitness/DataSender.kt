@@ -53,7 +53,7 @@ class DataSender(context: Context) {
             }
 
             if (unsyncedData.isNotEmpty()) {
-                val batchSize = 100
+                val batchSize = 300
                 val chunks = unsyncedData.chunked(batchSize)
 
                 for (chunk in chunks) {

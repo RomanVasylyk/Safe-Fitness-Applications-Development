@@ -39,6 +39,9 @@ interface FitnessDao {
     @Query("SELECT * FROM fitness_data WHERE date = :date LIMIT 1")
     suspend fun getEntryByDate(date: String): FitnessEntity?
 
+    @Query("SELECT * FROM fitness_data WHERE date = :date")
+    suspend fun getEntriesByDate(date: String): List<FitnessEntity>
+
     @Query("UPDATE fitness_data SET heartRate = :heartRate WHERE date = :date")
     suspend fun updateHeartRateByTime(date: String, heartRate: Float)
 

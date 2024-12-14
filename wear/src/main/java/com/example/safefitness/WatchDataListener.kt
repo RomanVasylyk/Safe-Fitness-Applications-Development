@@ -38,12 +38,15 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
                                     val steps = jsonObject.optInt("steps", -1).takeIf { it >= 0 }
                                     val heartRate = jsonObject.optDouble("heartRate", -1.0).takeIf { it >= 0 }?.toFloat()
 
-                                    val entry = fitnessDao.getEntryByDate(date)
-                                    if (entry != null &&
-                                        (steps == null || entry.steps == steps) &&
-                                        (heartRate == null || entry.heartRate == heartRate)
-                                    ) {
-                                        idsToMarkSynced.add(entry.id)
+                                    val entries = fitnessDao.getEntriesByDate(date)
+                                    if (entries.isNotEmpty()) {
+                                        entries.forEach { entry ->
+                                            val entryMatches = (steps == null || entry.steps == steps) &&
+                                                    (heartRate == null || entry.heartRate == heartRate)
+                                            if (entryMatches) {
+                                                idsToMarkSynced.add(entry.id)
+                                            }
+                                        }
                                     }
                                 }
 

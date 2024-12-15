@@ -84,4 +84,7 @@ interface FitnessDao {
             insertData(entity)
         }
     }
+
+    @Query("SELECT heartRate FROM fitness_data WHERE heartRate IS NOT NULL ORDER BY date DESC LIMIT 1")
+    suspend fun getLastRecordedHeartRate(): Float?
 }

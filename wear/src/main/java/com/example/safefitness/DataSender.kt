@@ -44,8 +44,13 @@ class DataSender(context: Context) {
                 sentBatchDao.getUnconfirmedBatches()
             }
 
-            for (batch in unconfirmedBatches) {
-                sendBatchToPhone(batch)
+            if (unconfirmedBatches.isNotEmpty()) {
+                val firstUnconfirmed = unconfirmedBatches.first()
+                Log.d("DataSender", "Resending first unconfirmed batch (ID: ${firstUnconfirmed.id}). Others will wait until confirmation.")
+                sendBatchToPhone(firstUnconfirmed)
+
+                lastSendTime = System.currentTimeMillis()
+                return
             }
 
             val unsyncedData = withContext(Dispatchers.IO) {
@@ -83,6 +88,7 @@ class DataSender(context: Context) {
                 lastSendTime = System.currentTimeMillis()
             } else {
                 Log.d("DataSender", "No unsynced data to send")
+                lastSendTime = System.currentTimeMillis()
             }
         }
     }
@@ -92,6 +98,7 @@ class DataSender(context: Context) {
         val putDataReq = PutDataMapRequest.create(path).apply {
             dataMap.putString("fitnessData", batch.jsonData)
             dataMap.putInt("batchId", batch.id)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest()
 
         dataClient.putDataItem(putDataReq)

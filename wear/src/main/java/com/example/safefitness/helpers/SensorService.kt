@@ -215,14 +215,19 @@ class SensorService : Service(), SensorEventListener {
         serviceScope.launch {
             try {
                 val roundedHeartRate = Math.round(heartRate).toFloat()
+                val lastHeartRate = fitnessDao.getLastRecordedHeartRate()
 
-                val newEntry = FitnessEntity(
-                    date = currentTime,
-                    steps = null,
-                    heartRate = roundedHeartRate,
-                    isSynced = false
-                )
-                fitnessDao.insertOrUpdateEntry(newEntry)
+                if (lastHeartRate == null || lastHeartRate != roundedHeartRate) {
+                    val newEntry = FitnessEntity(
+                        date = currentTime,
+                        steps = null,
+                        heartRate = roundedHeartRate,
+                        isSynced = false
+                    )
+                    fitnessDao.insertOrUpdateEntry(newEntry)
+                } else {
+                    // If the last pulse is the same, we do not add a new record
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

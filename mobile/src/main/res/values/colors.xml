@@ -16,4 +16,5 @@
     <color name="primaryTextColor">#212121</color>
     <color name="secondaryTextColor">#757575</color>
     <color name="gray">#757575</color>
+    <color name="successColor">#4CAF50</color>
 </resources>

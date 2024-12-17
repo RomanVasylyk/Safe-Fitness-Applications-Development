@@ -1,6 +1,12 @@
 package com.example.safefitness
 
+import android.content.Context
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.widget.NumberPicker
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +18,7 @@ import com.example.safefitness.data.WearDataListener
 import com.example.safefitness.ui.graph.FullScreenGraphActivity
 import com.example.safefitness.utils.GraphManager
 import com.google.android.gms.wearable.Wearable
+import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,9 +45,18 @@ class MainActivity : AppCompatActivity() {
     private var aggregatedHeartRate: List<Pair<String, Number>> = listOf()
     private lateinit var fitnessDao: FitnessDao
 
+    companion object {
+        private const val PREFS_NAME = "goal_prefs"
+        private const val KEY_GOAL = "step_goal"
+        private const val DEFAULT_GOAL = 10000
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBar)
+        setSupportActionBar(topAppBar)
 
 //        clearAllData()
 //        populateDatabaseWithHourlyRandomDataFor2024()
@@ -51,6 +67,10 @@ class MainActivity : AppCompatActivity() {
         dataHandler = DataHandler(database.fitnessDao())
         graphManager = GraphManager()
         fitnessDao = database.fitnessDao()
+
+        if (!isGoalSet()) {
+            saveGoal(DEFAULT_GOAL)
+        }
 
         wearDataListener = WearDataListener(
             dataHandler = dataHandler,
@@ -94,18 +114,117 @@ class MainActivity : AppCompatActivity() {
             val minHeartRate = fitnessDao.getMinHeartRateForCurrentDay(currentDate)
             val maxHeartRate = fitnessDao.getMaxHeartRateForCurrentDay(currentDate)
 
+            val currentGoal = getCurrentGoal()
+
             runOnUiThread {
                 totalStepsText.text = "Total Steps: $totalSteps"
                 lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate?.toInt() ?: "N/A"} bpm"
-
                 avgHeartRateText.text = "Avg: ${avgHeartRate?.toInt() ?: "N/A"} bpm"
                 minHeartRateText.text = "Min: ${minHeartRate?.toInt() ?: "N/A"} bpm"
                 maxHeartRateText.text = "Max: ${maxHeartRate?.toInt() ?: "N/A"} bpm"
 
                 graphManager.updateGraph(stepsGraph, aggregatedSteps, "Steps", "Time", "Steps", this@MainActivity)
                 graphManager.updateGraph(heartRateGraph, aggregatedHeartRate, "Heart Rate", "Time", "BPM", this@MainActivity)
+
+                val dailyGoalTitle = findViewById<TextView>(R.id.dailyGoalTitle)
+                val dailyGoalProgress = findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.dailyGoalProgress)
+
+                dailyGoalProgress.max = currentGoal
+
+                if (totalSteps >= currentGoal) {
+                    dailyGoalTitle.text = "Goal Achieved! ${totalSteps}/$currentGoal steps"
+                    dailyGoalProgress.setProgress(currentGoal, /*animated=*/true)
+
+                    val successColor = getColor(R.color.successColor)
+                    dailyGoalProgress.setIndicatorColor(successColor)
+                    dailyGoalTitle.setTextColor(successColor)
+                } else {
+                    dailyGoalTitle.text = "Daily Goal: $totalSteps/$currentGoal steps"
+                    dailyGoalProgress.setProgress(totalSteps, /*animated=*/true)
+
+                    val primaryColor = getColor(R.color.primaryColor)
+                    dailyGoalProgress.setIndicatorColor(primaryColor)
+                    dailyGoalTitle.setTextColor(primaryColor)
+                }
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                showPopupMenu()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showPopupMenu() {
+        val anchorView = findViewById<View>(R.id.topAppBar)
+        val popupMenu = PopupMenu(this, anchorView, android.view.Gravity.END)
+        popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.popup_set_goal -> {
+                    showSetGoalDialog()
+                    true
+                }
+                else -> false
+            }
+        }
+        popupMenu.show()
+    }
+
+    private fun showSetGoalDialog() {
+        val goals = (1..50).map { it * 1000 }.toTypedArray()
+
+        val currentGoal = getCurrentGoal()
+        val currentGoalIndex = goals.indexOfFirst { it == currentGoal }.takeIf { it >= 0 } ?: 0
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_set_goal, null)
+        val numberPicker = dialogView.findViewById<NumberPicker>(R.id.goalNumberPicker)
+
+        numberPicker.minValue = 0
+        numberPicker.maxValue = goals.size - 1
+        numberPicker.displayedValues = goals.map { it.toString() }.toTypedArray()
+        numberPicker.wrapSelectorWheel = false
+        numberPicker.value = currentGoalIndex
+
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("OK") { dialog, _ ->
+                val selectedGoal = goals[numberPicker.value]
+                saveGoal(selectedGoal)
+                Toast.makeText(this, "Selected goal: $selectedGoal steps", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+                updateData()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+
+        builder.create().show()
+    }
+
+    private fun saveGoal(goal: Int) {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_GOAL, goal).apply()
+    }
+
+    private fun getCurrentGoal(): Int {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_GOAL, DEFAULT_GOAL)
+    }
+
+    private fun isGoalSet(): Boolean {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.contains(KEY_GOAL)
     }
 
     override fun onDestroy() {

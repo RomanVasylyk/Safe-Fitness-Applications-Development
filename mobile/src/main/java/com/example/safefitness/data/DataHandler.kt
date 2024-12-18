@@ -16,6 +16,7 @@ class DataHandler(val fitnessDao: FitnessDao) {
                 fitnessDao.insertData(FitnessEntity(date = date, steps = steps, heartRate = heartRate))
             }
         }
+        fitnessDao.removeDuplicates()
     }
 
     suspend fun getDailyAggregatedData(currentDate: String): Pair<List<Pair<String, Number>>, List<Pair<String, Number>>> {

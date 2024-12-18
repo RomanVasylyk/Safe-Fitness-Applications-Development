@@ -13,6 +13,7 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
@@ -53,6 +54,16 @@ class SensorService : Service(), SensorEventListener {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
         stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+
+        if (isDeviceRebooted()) {
+            val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .remove("initial_steps")
+                .remove("initial_date")
+                .remove("last_sensor_steps")
+                .apply()
+        }
+
         acquireWakeLock()
         startListening()
     }
@@ -225,8 +236,6 @@ class SensorService : Service(), SensorEventListener {
                         isSynced = false
                     )
                     fitnessDao.insertOrUpdateEntry(newEntry)
-                } else {
-                    // If the last pulse is the same, we do not add a new record
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -277,6 +286,22 @@ class SensorService : Service(), SensorEventListener {
         if (wakeLock?.isHeld == true) {
             wakeLock?.release()
         }
+    }
+
+    private fun isDeviceRebooted(): Boolean {
+        val prefs = getSharedPreferences("fitness_prefs", Context.MODE_PRIVATE)
+        val lastUptime = prefs.getLong("last_uptime", -1)
+        val currentUptime = SystemClock.elapsedRealtime()
+
+        val rebooted = if (lastUptime > currentUptime && lastUptime != -1L) {
+            true
+        } else {
+            false
+        }
+
+        prefs.edit().putLong("last_uptime", currentUptime).apply()
+
+        return rebooted
     }
 
 }

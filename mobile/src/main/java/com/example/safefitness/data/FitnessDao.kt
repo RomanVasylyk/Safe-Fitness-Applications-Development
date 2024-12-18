@@ -49,4 +49,14 @@ interface FitnessDao {
 
     @Query("SELECT MIN(date) FROM fitness_data")
     suspend fun getFirstEntryDate(): String?
+
+    @Query("""
+    DELETE FROM fitness_data
+    WHERE id NOT IN (
+        SELECT MIN(id)
+        FROM fitness_data
+        GROUP BY date, steps, heartRate
+    )
+""")
+    suspend fun removeDuplicates()
 }

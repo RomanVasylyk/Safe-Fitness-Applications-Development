@@ -71,25 +71,38 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
         val pulseData = mutableListOf<DayPulseData>()
         val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
 
+        var totalPulseSum = 0f
+        var totalPulseCount = 0
+
         while (calendar.time <= dateFormat.parse(endDate)!!) {
             val dailyHeartRates = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
                 .mapNotNull { it.heartRate }
             if (dailyHeartRates.isNotEmpty()) {
+                val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f
+                val maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
+
+                val dailySum = dailyHeartRates.sum()
+                totalPulseSum += dailySum.toFloat()
+                totalPulseCount += dailyHeartRates.size
+
                 pulseData.add(
                     DayPulseData(
                         label = getDayLabel(calendar.get(Calendar.DAY_OF_WEEK)),
-                        minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f,
-                        maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
+                        minPulse = minPulse,
+                        maxPulse = maxPulse
                     )
                 )
             }
             calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
 
+        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
+        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
+
         return WeekGraphData(
             aggregatedData = pulseData,
             xLabels = pulseData.map { it.label },
-            summaryText = "",
+            summaryText = summaryText,
             dateRange = createDateRange(startDate, endDate)
         )
     }
@@ -120,25 +133,37 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
         val pulseData = mutableListOf<DayPulseData>()
         val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
 
+        var totalPulseSum = 0f
+        var totalPulseCount = 0
+
         while (calendar.time <= dateFormat.parse(endDate)!!) {
             val dailyHeartRates = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
                 .mapNotNull { it.heartRate }
             if (dailyHeartRates.isNotEmpty()) {
+                val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f
+                val maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
+
+                totalPulseSum += dailyHeartRates.sum().toFloat()
+                totalPulseCount += dailyHeartRates.size
+
                 pulseData.add(
                     DayPulseData(
                         label = shortDateFormat.format(calendar.time),
-                        minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f,
-                        maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
+                        minPulse = minPulse,
+                        maxPulse = maxPulse
                     )
                 )
             }
             calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
 
+        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
+        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
+
         return WeekGraphData(
             aggregatedData = pulseData,
             xLabels = pulseData.map { it.label },
-            summaryText = "",
+            summaryText = summaryText,
             dateRange = createDateRange(startDate, endDate)
         )
     }
@@ -174,6 +199,9 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
         val pulseData = mutableListOf<DayPulseData>()
         val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
 
+        var totalPulseSum = 0f
+        var totalPulseCount = 0
+
         while (calendar.time <= dateFormat.parse(endDate)!!) {
             val startOfMonth = calendar.clone() as Calendar
             val endOfMonth = calendar.clone() as Calendar
@@ -185,21 +213,31 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
             ).mapNotNull { it.heartRate }
 
             if (monthlyHeartRates.isNotEmpty()) {
+                val minPulse = monthlyHeartRates.minOrNull()?.toFloat() ?: 0f
+                val maxPulse = monthlyHeartRates.maxOrNull()?.toFloat() ?: 0f
+
+                totalPulseSum += monthlyHeartRates.sum().toFloat()
+                totalPulseCount += monthlyHeartRates.size
+
                 pulseData.add(
                     DayPulseData(
                         label = startOfMonth.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH),
-                        minPulse = monthlyHeartRates.minOrNull()?.toFloat() ?: 0f,
-                        maxPulse = monthlyHeartRates.maxOrNull()?.toFloat() ?: 0f
+                        minPulse = minPulse,
+                        maxPulse = maxPulse
                     )
                 )
             }
+
             calendar.add(Calendar.MONTH, 1)
         }
+
+        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
+        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
 
         return WeekGraphData(
             aggregatedData = pulseData,
             xLabels = pulseData.map { it.label },
-            summaryText = "",
+            summaryText = summaryText,
             dateRange = createDateRange(startDate, endDate)
         )
     }

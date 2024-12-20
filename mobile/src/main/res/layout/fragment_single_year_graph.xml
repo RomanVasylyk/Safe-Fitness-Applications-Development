@@ -1,33 +1,49 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/yearGraphDateRangeText"
-        android:layout_width="wrap_content"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Date Range: Jan 2024 - Dec 2024"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/darker_gray"/>
+        android:layout_margin="8dp"
+        app:cardCornerRadius="0dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="8dp"
+        android:backgroundTint="@android:color/white">
 
-    <TextView
-        android:id="@+id/yearGraphSummaryText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Total Steps:"
-        android:textSize="16sp"
-        android:textStyle="italic"
-        android:textColor="@android:color/darker_gray"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/yearGraphDateRangeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Date Range: Jan 2024 - Dec 2024"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/darker_gray"/>
+
+            <TextView
+                android:id="@+id/yearGraphSummaryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Total Steps:"
+                android:textSize="16sp"
+                android:textStyle="italic"
+                android:textColor="@android:color/darker_gray"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <lecho.lib.hellocharts.view.ColumnChartView
         android:id="@+id/yearColumnChartView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/white" />
-
 </LinearLayout>

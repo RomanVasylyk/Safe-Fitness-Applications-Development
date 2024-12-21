@@ -20,12 +20,11 @@ class GraphManager {
     ) {
         if (data.isEmpty()) return
 
-        val timeLabels = data.mapIndexed { index, pair ->
-            val time = pair.first.split(" ")[1]
-            AxisValue(index.toFloat()).setLabel(time)
-        }
-
+        val axisValues = mutableListOf<AxisValue>()
         val points = data.mapIndexed { index, pair ->
+            val parts = pair.first.split(" ")
+            val label = if (parts.size > 1) parts[1] else parts[0]
+            axisValues.add(AxisValue(index.toFloat()).setLabel(label))
             PointValue(index.toFloat(), pair.second.toFloat())
         }
 
@@ -40,7 +39,7 @@ class GraphManager {
         }
 
         val chartData = LineChartData(listOf(line)).apply {
-            axisXBottom = Axis(timeLabels).apply {
+            axisXBottom = Axis(axisValues).apply {
                 name = xAxisName
                 textColor = context.getColor(android.R.color.black)
                 textSize = 12
@@ -56,10 +55,8 @@ class GraphManager {
         }
 
         graph.lineChartData = chartData
-
         val minY = points.minOf { it.y }
         val maxY = points.maxOf { it.y }
-
         val viewport = if (points.size == 1) {
             Viewport().apply {
                 top = maxY + 10f
@@ -72,20 +69,21 @@ class GraphManager {
                 top = maxY + (maxY - minY).coerceAtLeast(1f) * 0.1f
                 bottom = minY - (maxY - minY).coerceAtLeast(1f) * 0.1f
                 left = -0.5f
-                right = points.size.toFloat() - 1 + 0.5f
+                right = points.size - 1 + 0.5f
             }
         }
-
-        graph.apply {
-            maximumViewport = viewport
-            currentViewport = viewport
-            isInteractive = true
-            zoomType = ZoomType.HORIZONTAL_AND_VERTICAL
-            isZoomEnabled = true
-            setContainerScrollEnabled(true, ContainerScrollType.HORIZONTAL)
-            setOnValueTouchListener(ValueTouchListener())
-        }
+        graph.maximumViewport = viewport
+        graph.currentViewport = viewport
+        graph.isInteractive = true
+        graph.zoomType = ZoomType.HORIZONTAL_AND_VERTICAL
+        graph.isZoomEnabled = true
+        graph.setContainerScrollEnabled(true, ContainerScrollType.HORIZONTAL)
+        graph.setOnValueTouchListener(object : LineChartOnValueSelectListener {
+            override fun onValueSelected(lineIndex: Int, pointIndex: Int, value: PointValue) {}
+            override fun onValueDeselected() {}
+        })
     }
+
     private inner class ValueTouchListener : LineChartOnValueSelectListener {
         override fun onValueSelected(lineIndex: Int, pointIndex: Int, value: PointValue) {
         }

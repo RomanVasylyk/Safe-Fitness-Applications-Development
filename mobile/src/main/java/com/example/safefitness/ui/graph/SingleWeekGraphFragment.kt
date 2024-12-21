@@ -9,16 +9,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.utils.AggregationPeriod
+import com.example.safefitness.utils.DayPulseData
 import com.example.safefitness.utils.GraphDataProcessor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.ColumnChartView
 
 class SingleWeekGraphFragment : Fragment() {
-
     private lateinit var graphView: ColumnChartView
     private lateinit var summaryText: TextView
     private lateinit var dateRangeText: TextView
@@ -26,109 +24,79 @@ class SingleWeekGraphFragment : Fragment() {
     private var startDate: String = ""
     private var endDate: String = ""
     private var dataType: String = "steps"
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_single_week_graph, container, false)
-
         graphView = view.findViewById(R.id.columnChartView)
         summaryText = view.findViewById(R.id.weekGraphSummaryText)
         dateRangeText = view.findViewById(R.id.weekGraphDateRangeText)
-
         val database = FitnessDatabase.getDatabase(requireContext())
         dataProcessor = GraphDataProcessor(database.fitnessDao())
-
         startDate = arguments?.getString("startDate") ?: ""
         endDate = arguments?.getString("endDate") ?: ""
         dataType = arguments?.getString("dataType") ?: "steps"
-
         loadWeekData()
         return view
     }
-
     private fun loadWeekData() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val weekData = withContext(Dispatchers.IO) {
-                dataProcessor.getWeeklyDataForRange(startDate, endDate, dataType)
-            }
-            summaryText.text = weekData.summaryText
-            dateRangeText.text = weekData.dateRange
-            updateGraph(weekData.aggregatedData)
+            val result = dataProcessor.aggregateData(startDate, endDate, dataType, AggregationPeriod.WEEK)
+            summaryText.text = result.summaryText
+            dateRangeText.text = result.dateRange
+            updateGraph(result.aggregatedData)
         }
     }
-
     private fun updateGraph(data: List<Any>) {
         var maxYValue = 0f
-
+        val columns = mutableListOf<Column>()
+        val axisValues = mutableListOf<AxisValue>()
         if (dataType == "steps") {
-            val columns = data.mapIndexed { index, item ->
-                val steps = item as Pair<String, Number>
-                val value = steps.second.toFloat()
-                if (value > maxYValue) maxYValue = value
-                val subcolumn = SubcolumnValue(value, resources.getColor(android.R.color.holo_blue_light, null))
-                Column(listOf(subcolumn)).apply { setHasLabels(true) }
-            }
-
-            val columnChartData = ColumnChartData(columns).apply {
-                axisXBottom = Axis(data.mapIndexed { index, item ->
-                    val steps = item as Pair<String, Number>
-                    AxisValue(index.toFloat()).setLabel(steps.first)
-                }).apply {
-                    name = "Day"
-                    textSize = 12
-                }
-                axisYLeft = Axis().apply {
-                    name = "Steps"
-                    textSize = 12
+            data.forEachIndexed { index, item ->
+                if (item is Pair<*, *>) {
+                    val label = item.first as? String ?: ""
+                    val value = (item.second as? Number)?.toFloat() ?: 0f
+                    if (value > maxYValue) maxYValue = value
+                    axisValues.add(AxisValue(index.toFloat()).setLabel(label))
+                    val subcolumn = SubcolumnValue(value, requireContext().getColor(android.R.color.holo_blue_dark))
+                    columns.add(Column(listOf(subcolumn)).apply { setHasLabels(true) })
                 }
             }
-
+            val columnChartData = ColumnChartData(columns)
+            columnChartData.axisXBottom = Axis(axisValues).setName("Day")
+            columnChartData.axisYLeft = Axis().setName("Steps")
             graphView.columnChartData = columnChartData
-        } else if (dataType == "heartRate") {
-            val columns = data.map { item ->
-                val pulseData = item as GraphDataProcessor.DayPulseData
-                if (pulseData.maxPulse > maxYValue) maxYValue = pulseData.maxPulse
-                val minPulseValue = SubcolumnValue(pulseData.minPulse, resources.getColor(android.R.color.holo_blue_dark, null))
-                val maxPulseValue = SubcolumnValue(pulseData.maxPulse, resources.getColor(android.R.color.holo_red_light, null))
-                Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) }
-            }
-
-            val columnChartData = ColumnChartData(columns).apply {
-                axisXBottom = Axis(data.mapIndexed { index, item ->
-                    val pulseData = item as GraphDataProcessor.DayPulseData
-                    AxisValue(index.toFloat()).setLabel(pulseData.label)
-                }).apply {
-                    name = "Day"
-                    textSize = 12
-                }
-                axisYLeft = Axis().apply {
-                    name = "BPM"
-                    textSize = 12
+        } else {
+            data.forEachIndexed { index, item ->
+                if (item is DayPulseData) {
+                    val min = item.minPulse
+                    val max = item.maxPulse
+                    val label = item.label
+                    if (max > maxYValue) maxYValue = max
+                    axisValues.add(AxisValue(index.toFloat()).setLabel(label))
+                    val minPulseValue = SubcolumnValue(min, requireContext().getColor(android.R.color.holo_blue_dark))
+                    val maxPulseValue = SubcolumnValue(max, requireContext().getColor(android.R.color.holo_red_light))
+                    columns.add(Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) })
                 }
             }
-
+            val columnChartData = ColumnChartData(columns)
+            columnChartData.axisXBottom = Axis(axisValues).setName("Day")
+            columnChartData.axisYLeft = Axis().setName("BPM")
             graphView.columnChartData = columnChartData
         }
-
-        val viewport = Viewport(graphView.maximumViewport).apply {
-            top = maxYValue * 1.1f
-        }
+        val viewport = Viewport(graphView.maximumViewport)
+        viewport.top = maxYValue * 1.1f
         graphView.maximumViewport = viewport
         graphView.currentViewport = viewport
     }
-
-
     companion object {
         fun newInstance(startDate: String, endDate: String, dataType: String): SingleWeekGraphFragment {
-            return SingleWeekGraphFragment().apply {
-                arguments = Bundle().apply {
-                    putString("startDate", startDate)
-                    putString("endDate", endDate)
-                    putString("dataType", dataType)
-                }
-            }
+            val fragment = SingleWeekGraphFragment()
+            val args = Bundle()
+            args.putString("startDate", startDate)
+            args.putString("endDate", endDate)
+            args.putString("dataType", dataType)
+            fragment.arguments = args
+            return fragment
         }
     }
 }
+

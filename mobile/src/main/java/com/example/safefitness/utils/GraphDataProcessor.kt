@@ -6,269 +6,161 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 class GraphDataProcessor(private val fitnessDao: FitnessDao) {
-
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val displayDateFormat = SimpleDateFormat("d MMM yyyy", Locale.ENGLISH)
-    private val shortDateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-
-    suspend fun getWeeklyDataForRange(startDate: String, endDate: String, dataType: String): WeekGraphData {
-        return withContext(Dispatchers.IO) {
-            if (dataType == "steps") calculateStepsData(startDate, endDate)
-            else calculateHeartRateData(startDate, endDate)
-        }
-    }
-
-    suspend fun getMonthlyDataForRange(startDate: String, endDate: String, dataType: String): WeekGraphData {
-        return withContext(Dispatchers.IO) {
-            if (dataType == "steps") calculateStepsMonthlyData(startDate, endDate)
-            else calculateHeartRateMonthlyData(startDate, endDate)
-        }
-    }
-
-    suspend fun getYearlyData(year: Int, dataType: String): WeekGraphData {
-        return withContext(Dispatchers.IO) {
-            val startDate = dateFormat.format(Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, Calendar.JANUARY)
-                set(Calendar.DAY_OF_MONTH, 1)
-            }.time)
-
-            val endDate = dateFormat.format(Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, Calendar.DECEMBER)
-                set(Calendar.DAY_OF_MONTH, 31)
-            }.time)
-
-            if (dataType == "steps") calculateStepsYearlyData(startDate, endDate)
-            else calculateHeartRateYearlyData(startDate, endDate)
-        }
-    }
-
-    private suspend fun calculateStepsData(startDate: String, endDate: String): WeekGraphData {
-        val stepData = mutableListOf<Pair<String, Number>>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
-
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val dailySteps = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
-                .mapNotNull { it.steps }.sum()
-
-            stepData.add(getDayLabel(calendar.get(Calendar.DAY_OF_WEEK)) to dailySteps)
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-        }
-
-        val averageSteps = stepData.sumBy { it.second.toInt() } / stepData.size.coerceAtLeast(1)
-        return WeekGraphData(
-            aggregatedData = stepData,
-            xLabels = (1..7).map { getDayLabel(it) }, // Всі дні тижня
-            summaryText = "Average Steps per Day: $averageSteps",
-            dateRange = createDateRange(startDate, endDate)
-        )
-    }
-
-
-    private suspend fun calculateHeartRateData(startDate: String, endDate: String): WeekGraphData {
-        val pulseData = mutableListOf<DayPulseData>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
-
-        var totalPulseSum = 0f
-        var totalPulseCount = 0
-
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val dailyHeartRates = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
-                .mapNotNull { it.heartRate }
-            if (dailyHeartRates.isNotEmpty()) {
-                val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f
-                val maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
-
-                val dailySum = dailyHeartRates.sum()
-                totalPulseSum += dailySum.toFloat()
-                totalPulseCount += dailyHeartRates.size
-
-                pulseData.add(
-                    DayPulseData(
-                        label = getDayLabel(calendar.get(Calendar.DAY_OF_WEEK)),
-                        minPulse = minPulse,
-                        maxPulse = maxPulse
-                    )
-                )
+    suspend fun aggregateData(startDate: String, endDate: String, dataType: String, period: AggregationPeriod): AggregationResult = withContext(Dispatchers.IO) {
+        val result = mutableListOf<Any>()
+        val xLabels = mutableListOf<String>()
+        var summaryText = ""
+        when (period) {
+            AggregationPeriod.DAY -> {
+                val dailyData = aggregateDailyData(startDate, dataType)
+                result.addAll(dailyData.aggregatedData)
+                xLabels.addAll(dailyData.xLabels)
+                summaryText = dailyData.summaryText
             }
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-        }
-
-        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
-        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
-
-        return WeekGraphData(
-            aggregatedData = pulseData,
-            xLabels = pulseData.map { it.label },
-            summaryText = summaryText,
-            dateRange = createDateRange(startDate, endDate)
-        )
-    }
-
-    private suspend fun calculateStepsMonthlyData(startDate: String, endDate: String): WeekGraphData {
-        val stepData = mutableListOf<Pair<String, Number>>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
-
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val dailySteps = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
-                .mapNotNull { it.steps }.sum()
-            if (dailySteps > 0) {
-                stepData.add(shortDateFormat.format(calendar.time) to dailySteps)
+            AggregationPeriod.WEEK -> {
+                val weekData = calculateWeeklyOrMonthlyData(startDate, endDate, dataType)
+                result.addAll(weekData.aggregatedData)
+                xLabels.addAll(weekData.xLabels)
+                summaryText = weekData.summaryText
             }
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
-        }
-
-        val totalSteps = stepData.sumBy { it.second.toInt() }
-        return WeekGraphData(
-            aggregatedData = stepData,
-            xLabels = stepData.map { it.first },
-            summaryText = "Total Steps: $totalSteps",
-            dateRange = createDateRange(startDate, endDate)
-        )
-    }
-
-    private suspend fun calculateHeartRateMonthlyData(startDate: String, endDate: String): WeekGraphData {
-        val pulseData = mutableListOf<DayPulseData>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
-
-        var totalPulseSum = 0f
-        var totalPulseCount = 0
-
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val dailyHeartRates = fitnessDao.getDataForCurrentDay(dateFormat.format(calendar.time))
-                .mapNotNull { it.heartRate }
-            if (dailyHeartRates.isNotEmpty()) {
-                val minPulse = dailyHeartRates.minOrNull()?.toFloat() ?: 0f
-                val maxPulse = dailyHeartRates.maxOrNull()?.toFloat() ?: 0f
-
-                totalPulseSum += dailyHeartRates.sum().toFloat()
-                totalPulseCount += dailyHeartRates.size
-
-                pulseData.add(
-                    DayPulseData(
-                        label = shortDateFormat.format(calendar.time),
-                        minPulse = minPulse,
-                        maxPulse = maxPulse
-                    )
-                )
+            AggregationPeriod.MONTH -> {
+                val monthData = calculateWeeklyOrMonthlyData(startDate, endDate, dataType)
+                result.addAll(monthData.aggregatedData)
+                xLabels.addAll(monthData.xLabels)
+                summaryText = monthData.summaryText
             }
-            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            AggregationPeriod.YEAR -> {
+                val yearData = calculateYearlyData(startDate, endDate, dataType)
+                result.addAll(yearData.aggregatedData)
+                xLabels.addAll(yearData.xLabels)
+                summaryText = yearData.summaryText
+            }
         }
-
-        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
-        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
-
-        return WeekGraphData(
-            aggregatedData = pulseData,
-            xLabels = pulseData.map { it.label },
-            summaryText = summaryText,
-            dateRange = createDateRange(startDate, endDate)
-        )
+        AggregationResult(result, xLabels, summaryText, "$startDate - $endDate")
     }
 
-    private suspend fun calculateStepsYearlyData(startDate: String, endDate: String): WeekGraphData {
-        val stepData = mutableListOf<Pair<String, Number>>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
+    private suspend fun aggregateDailyData(date: String, dataType: String): AggregationResult {
+        val aggregatedData = mutableListOf<Pair<String, Number>>()
+        val xLabels = mutableListOf<String>()
+        var summaryText = ""
+        val dataList = fitnessDao.getDataForCurrentDay(date)
 
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val startOfMonth = calendar.clone() as Calendar
-            val endOfMonth = calendar.clone() as Calendar
-            startOfMonth.set(Calendar.DAY_OF_MONTH, 1)
-            endOfMonth.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+        if (dataType == "steps") {
+            val map = mutableMapOf<String, Int>()
+            for (item in dataList) {
+                val time = item.date.substring(11, 13)
+                val steps = item.steps ?: 0
+                map[time] = (map[time] ?: 0) + steps
+            }
+            for ((key, value) in map) {
+                aggregatedData.add(key to value)
+                xLabels.add(key)
+            }
+            summaryText = "Total Steps: ${aggregatedData.sumBy { it.second.toInt() }}"
+        } else {
+            val hrMap = mutableMapOf<String, MutableList<Float>>()
+            for (item in dataList) {
+                if (item.heartRate != null) {
+                    val hhmm = item.date.substring(11, 16)
+                    val hh = hhmm.substring(0, 2)
+                    val mm = hhmm.substring(3, 5).toIntOrNull() ?: 0
+                    val min5 = (mm / 5) * 5
+                    val min5Str = if (min5 < 10) "0$min5" else "$min5"
+                    val label = "$hh:$min5Str"
+                    val list = hrMap.getOrPut(label) { mutableListOf() }
+                    list.add(item.heartRate)
+                }
+            }
+            val aggregatedData = mutableListOf<Pair<String, Number>>()
+            for ((key, list) in hrMap) {
+                val avg = list.sum() / list.size
+                aggregatedData.add(key to avg)
+            }
+            val xLabels = aggregatedData.map { it.first }
+            val allRates = dataList.mapNotNull { it.heartRate }
+            val summaryText = if (allRates.isEmpty()) "No data" else "Avg Heart Rate: ${(allRates.average()).toInt()} bpm"
+            return AggregationResult(aggregatedData, xLabels, summaryText, date)
+        }
+        return AggregationResult(aggregatedData, xLabels, summaryText, date)
+    }
 
-            val monthlySteps = fitnessDao.getDataForRange(
-                dateFormat.format(startOfMonth.time), dateFormat.format(endOfMonth.time)
-            ).mapNotNull { it.steps }.sum()
+    private suspend fun calculateWeeklyOrMonthlyData(startDate: String, endDate: String, dataType: String): AggregationResult {
+        val resultData = mutableListOf<Any>()
+        val xLabels = mutableListOf<String>()
+        val calendar = Calendar.getInstance()
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        calendar.time = sdf.parse(startDate)
+        val end = sdf.parse(endDate)
+        var total = 0
+        var count = 0
+        val pulseList = mutableListOf<Float>()
+        while (!calendar.time.after(end)) {
+            val dayString = sdf.format(calendar.time)
+            if (dataType == "steps") {
+                val steps = fitnessDao.getDataForCurrentDay(dayString).sumBy { it.steps ?: 0 }
+                resultData.add(dayString to steps)
+                total += steps
+            } else {
+                val rates = fitnessDao.getDataForCurrentDay(dayString).mapNotNull { it.heartRate }
+                if (rates.isNotEmpty()) {
+                    val min = rates.minOrNull() ?: 0f
+                    val max = rates.maxOrNull() ?: 0f
+                    resultData.add(DayPulseData(dayString, min, max))
+                    pulseList.addAll(rates)
+                } else {
+                    resultData.add(DayPulseData(dayString, 0f, 0f))
+                }
+            }
+            xLabels.add(dayString)
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            count++
+        }
+        val summaryText = if (dataType == "steps") "Total Steps: $total" else if (pulseList.isEmpty()) "No data" else "Average Heart Rate: ${(pulseList.average()).toInt()} bpm"
+        return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
+    }
 
-            stepData.add(startOfMonth.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH) to monthlySteps)
+    private suspend fun calculateYearlyData(startDate: String, endDate: String, dataType: String): AggregationResult {
+        val resultData = mutableListOf<Any>()
+        val xLabels = mutableListOf<String>()
+        val calendar = Calendar.getInstance()
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        calendar.time = sdf.parse(startDate)
+        val end = sdf.parse(endDate)
+        var totalSteps = 0
+        val allRates = mutableListOf<Float>()
+        while (!calendar.time.after(end)) {
+            val monthStart = calendar.clone() as Calendar
+            monthStart.set(Calendar.DAY_OF_MONTH, 1)
+            val monthEnd = calendar.clone() as Calendar
+            monthEnd.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+            val monthStartString = sdf.format(monthStart.time)
+            val monthEndString = sdf.format(monthEnd.time)
+            val dataRange = fitnessDao.getDataForRange(monthStartString, monthEndString)
+            if (dataType == "steps") {
+                val steps = dataRange.sumBy { it.steps ?: 0 }
+                val label = monthStart.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH)
+                resultData.add(label to steps)
+                xLabels.add(label)
+                totalSteps += steps
+            } else {
+                val rates = dataRange.mapNotNull { it.heartRate }
+                val label = monthStart.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH)
+                if (rates.isNotEmpty()) {
+                    val min = rates.minOrNull() ?: 0f
+                    val max = rates.maxOrNull() ?: 0f
+                    resultData.add(DayPulseData(label, min, max))
+                    xLabels.add(label)
+                    allRates.addAll(rates)
+                } else {
+                    resultData.add(DayPulseData(label, 0f, 0f))
+                    xLabels.add(label)
+                }
+            }
             calendar.add(Calendar.MONTH, 1)
         }
-
-        val totalSteps = stepData.sumBy { it.second.toInt() }
-        return WeekGraphData(
-            aggregatedData = stepData,
-            xLabels = stepData.map { it.first },
-            summaryText = "Total Steps: $totalSteps",
-            dateRange = createDateRange(startDate, endDate)
-        )
+        val summaryText = if (dataType == "steps") "Total Steps: $totalSteps" else if (allRates.isEmpty()) "No data" else "Average Heart Rate: ${(allRates.average()).toInt()} bpm"
+        return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
     }
-
-    private suspend fun calculateHeartRateYearlyData(startDate: String, endDate: String): WeekGraphData {
-        val pulseData = mutableListOf<DayPulseData>()
-        val calendar = Calendar.getInstance().apply { time = dateFormat.parse(startDate)!! }
-
-        var totalPulseSum = 0f
-        var totalPulseCount = 0
-
-        while (calendar.time <= dateFormat.parse(endDate)!!) {
-            val startOfMonth = calendar.clone() as Calendar
-            val endOfMonth = calendar.clone() as Calendar
-            startOfMonth.set(Calendar.DAY_OF_MONTH, 1)
-            endOfMonth.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
-
-            val monthlyHeartRates = fitnessDao.getDataForRange(
-                dateFormat.format(startOfMonth.time), dateFormat.format(endOfMonth.time)
-            ).mapNotNull { it.heartRate }
-
-            if (monthlyHeartRates.isNotEmpty()) {
-                val minPulse = monthlyHeartRates.minOrNull()?.toFloat() ?: 0f
-                val maxPulse = monthlyHeartRates.maxOrNull()?.toFloat() ?: 0f
-
-                totalPulseSum += monthlyHeartRates.sum().toFloat()
-                totalPulseCount += monthlyHeartRates.size
-
-                pulseData.add(
-                    DayPulseData(
-                        label = startOfMonth.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH),
-                        minPulse = minPulse,
-                        maxPulse = maxPulse
-                    )
-                )
-            }
-
-            calendar.add(Calendar.MONTH, 1)
-        }
-
-        val averagePulse = if (totalPulseCount > 0) totalPulseSum / totalPulseCount else 0f
-        val summaryText = if (totalPulseCount > 0) "Average Heart Rate: ${averagePulse.toInt()} BPM" else "No data"
-
-        return WeekGraphData(
-            aggregatedData = pulseData,
-            xLabels = pulseData.map { it.label },
-            summaryText = summaryText,
-            dateRange = createDateRange(startDate, endDate)
-        )
-    }
-
-    private fun getDayLabel(dayOfWeek: Int): String {
-        return when (dayOfWeek) {
-            Calendar.MONDAY -> "Mon"
-            Calendar.TUESDAY -> "Tue"
-            Calendar.WEDNESDAY -> "Wed"
-            Calendar.THURSDAY -> "Thu"
-            Calendar.FRIDAY -> "Fri"
-            Calendar.SATURDAY -> "Sat"
-            Calendar.SUNDAY -> "Sun"
-            else -> ""
-        }
-    }
-
-    private fun createDateRange(startDate: String, endDate: String): String {
-        return "${displayDateFormat.format(dateFormat.parse(startDate))} - ${displayDateFormat.format(dateFormat.parse(endDate))}"
-    }
-
-    data class WeekGraphData(
-        val aggregatedData: List<Any>,
-        val xLabels: List<String>,
-        val summaryText: String,
-        val dateRange: String
-    )
-
-    data class DayPulseData(
-        val label: String,
-        val minPulse: Float,
-        val maxPulse: Float
-    )
 }

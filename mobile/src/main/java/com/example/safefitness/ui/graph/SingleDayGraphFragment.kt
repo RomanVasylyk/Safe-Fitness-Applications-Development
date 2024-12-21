@@ -10,107 +10,65 @@ import com.example.safefitness.utils.GraphManager
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
-import kotlinx.coroutines.Dispatchers
+import com.example.safefitness.utils.AggregationPeriod
+import com.example.safefitness.utils.DayPulseData
+import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.view.LineChartView
-import java.util.TreeMap
 
 class SingleDayGraphFragment : Fragment() {
-
     private lateinit var graphView: LineChartView
     private lateinit var fitnessDao: FitnessDao
     private lateinit var graphManager: GraphManager
-
+    private lateinit var dataProcessor: GraphDataProcessor
     private var dataType: String = "steps"
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_single_day_graph, container, false)
         graphView = view.findViewById(R.id.graphView)
-
         val database = FitnessDatabase.getDatabase(requireContext())
         fitnessDao = database.fitnessDao()
+        dataProcessor = GraphDataProcessor(fitnessDao)
         graphManager = GraphManager()
-
-        val date = arguments?.getString("date") ?: return view
+        val date = arguments?.getString("date") ?: ""
         dataType = arguments?.getString("dataType") ?: "steps"
-
         loadDayData(date)
         return view
     }
-
-    private fun loadDayData(date: String) {
+    private fun loadDayData(day: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val rawData = withContext(Dispatchers.IO) {
-                if (dataType == "steps") {
-                    fitnessDao.getDataForCurrentDay(date)
-                        .mapNotNull { it.steps?.let { steps -> it.date to steps as Number } }
-                } else {
-                    fitnessDao.getDataForCurrentDay(date)
-                        .mapNotNull { it.heartRate?.let { heartRate -> it.date to heartRate as Number } }
-                }
-            }
-
-            val aggregatedData = if (dataType == "steps") {
-                aggregateDataByHour(rawData)
-            } else {
-                aggregateHeartRateBy5Minutes(rawData)
-            }
-
+            val result = dataProcessor.aggregateData(day, day, dataType, AggregationPeriod.DAY)
             graphManager.updateGraph(
-                graph = graphView,
-                data = aggregatedData,
-                title = if (dataType == "steps") "Steps for $date" else "Heart Rate for $date",
-                xAxisName = "Time",
-                yAxisName = if (dataType == "steps") "Steps" else "BPM",
-                context = requireContext()
+                graphView,
+                convertToPairs(result.aggregatedData),
+                if (dataType == "steps") "Steps for $day" else "Heart Rate for $day",
+                "Time",
+                if (dataType == "steps") "Steps" else "BPM",
+                requireContext()
             )
         }
     }
-
-    private fun aggregateDataByHour(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
-        val aggregatedData = TreeMap<String, MutableList<Number>>()
-
-        data.forEach { (time, value) ->
-            val hour = time.split(":")[0]
-            aggregatedData.getOrPut(hour) { mutableListOf() }.add(value)
+    private fun convertToPairs(data: List<Any>): List<Pair<String, Number>> {
+        val list = mutableListOf<Pair<String, Number>>()
+        for (item in data) {
+            if (item is Pair<*, *>) {
+                val key = item.first as? String ?: continue
+                val value = item.second as? Number ?: continue
+                list.add(key to value)
+            }
+            if (item is DayPulseData) {
+                list.add(item.label to (item.minPulse + item.maxPulse) / 2)
+            }
         }
-
-        return aggregatedData.map { (hour, values) ->
-            val label = "$hour:00"
-            val aggregatedValue = values.sumBy { it.toInt() }
-            label to aggregatedValue
-        }
+        return list
     }
-
-    private fun aggregateHeartRateBy5Minutes(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
-        val aggregatedData = mutableMapOf<String, MutableList<Float>>()
-
-        data.forEach { (time, value) ->
-            val heartRate = value.toFloat()
-            val hour = time.split(":")[0]
-            val minutes = time.split(":")[1].toInt()
-            val roundedMinutes = (minutes / 5) * 5
-            val intervalKey = "$hour:${if (roundedMinutes < 10) "0$roundedMinutes" else roundedMinutes}"
-            aggregatedData.getOrPut(intervalKey) { mutableListOf() }.add(heartRate)
-        }
-
-        return aggregatedData.map { (interval, values) ->
-            interval to values.average().toFloat()
-        }.sortedBy { it.first }
-    }
-
     companion object {
         fun newInstance(date: String, dataType: String): SingleDayGraphFragment {
-            return SingleDayGraphFragment().apply {
-                arguments = Bundle().apply {
-                    putString("date", date)
-                    putString("dataType", dataType)
-                }
-            }
+            val fragment = SingleDayGraphFragment()
+            val args = Bundle()
+            args.putString("date", date)
+            args.putString("dataType", dataType)
+            fragment.arguments = args
+            return fragment
         }
     }
 }

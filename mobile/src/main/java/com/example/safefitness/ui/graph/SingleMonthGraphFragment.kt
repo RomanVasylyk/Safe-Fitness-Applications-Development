@@ -11,6 +11,7 @@ import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.utils.AggregationPeriod
+import com.example.safefitness.utils.ColumnChartHelper
 import com.example.safefitness.utils.DayPulseData
 import com.example.safefitness.utils.GraphDataProcessor
 import kotlinx.coroutines.launch
@@ -54,46 +55,17 @@ class SingleMonthGraphFragment : Fragment() {
     }
 
     private fun updateGraph(data: List<Any>) {
-        var maxYValue = 0f
-        val columns = mutableListOf<Column>()
-        val axisValues = mutableListOf<AxisValue>()
-        if (dataType == "steps") {
-            data.forEachIndexed { index, item ->
-                if (item is Pair<*, *>) {
-                    val label = item.first as? String ?: ""
-                    val value = (item.second as? Number)?.toFloat() ?: 0f
-                    if (value > maxYValue) maxYValue = value
-                    axisValues.add(AxisValue(index.toFloat()).setLabel(label))
-                    val subcolumn = SubcolumnValue(value, requireContext().getColor(android.R.color.holo_blue_dark))
-                    columns.add(Column(listOf(subcolumn)).apply { setHasLabels(true) })
-                }
-            }
-            val columnChartData = ColumnChartData(columns)
-            columnChartData.axisXBottom = Axis(axisValues).setName("Day")
-            columnChartData.axisYLeft = Axis().setName("Steps")
-            graphView.columnChartData = columnChartData
-        } else {
-            data.forEachIndexed { index, item ->
-                if (item is DayPulseData) {
-                    val min = item.minPulse
-                    val max = item.maxPulse
-                    val label = item.label
-                    if (max > maxYValue) maxYValue = max
-                    axisValues.add(AxisValue(index.toFloat()).setLabel(label))
-                    val minPulseValue = SubcolumnValue(min, requireContext().getColor(android.R.color.holo_blue_dark))
-                    val maxPulseValue = SubcolumnValue(max, requireContext().getColor(android.R.color.holo_red_light))
-                    columns.add(Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) })
-                }
-            }
-            val columnChartData = ColumnChartData(columns)
-            columnChartData.axisXBottom = Axis(axisValues).setName("Day")
-            columnChartData.axisYLeft = Axis().setName("BPM")
-            graphView.columnChartData = columnChartData
-        }
-        val viewport = Viewport(graphView.maximumViewport)
-        viewport.top = maxYValue * 1.1f
-        graphView.maximumViewport = viewport
-        graphView.currentViewport = viewport
+        val xAxisName = "Day"
+        val yAxisName = if (dataType == "steps") "Steps" else "BPM"
+
+        ColumnChartHelper.buildColumnChart(
+            chartView = graphView,
+            data = data,
+            dataType = dataType,
+            xAxisName = xAxisName,
+            yAxisName = yAxisName,
+            context = requireContext()
+        )
     }
 
     companion object {

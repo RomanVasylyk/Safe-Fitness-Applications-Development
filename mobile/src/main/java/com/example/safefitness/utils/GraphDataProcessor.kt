@@ -1,14 +1,20 @@
 package com.example.safefitness.utils
 
-import com.example.safefitness.data.FitnessDao
+import com.example.safefitness.data.FitnessEntity
+import com.example.safefitness.data.FitnessRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+class GraphDataProcessor(private val repository: FitnessRepository) {
 
-class GraphDataProcessor(private val fitnessDao: FitnessDao) {
-    suspend fun aggregateData(startDate: String, endDate: String, dataType: String, period: AggregationPeriod): AggregationResult = withContext(Dispatchers.IO) {
+    suspend fun aggregateData(
+        startDate: String,
+        endDate: String,
+        dataType: String,
+        period: AggregationPeriod
+    ): AggregationResult = withContext(Dispatchers.IO) {
         val result = mutableListOf<Any>()
         val xLabels = mutableListOf<String>()
         var summaryText = ""
@@ -42,68 +48,71 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
     }
 
     private suspend fun aggregateDailyData(date: String, dataType: String): AggregationResult {
-        val aggregatedData = mutableListOf<Pair<String, Number>>()
-        val xLabels = mutableListOf<String>()
-        var summaryText = ""
-        val dataList = fitnessDao.getDataForCurrentDay(date)
-
-        if (dataType == "steps") {
-            val map = mutableMapOf<String, Int>()
-            for (item in dataList) {
-                val time = item.date.substring(11, 13)
-                val steps = item.steps ?: 0
-                map[time] = (map[time] ?: 0) + steps
-            }
-            for ((key, value) in map) {
-                aggregatedData.add(key to value)
-                xLabels.add(key)
-            }
-            summaryText = "Total Steps: ${aggregatedData.sumBy { it.second.toInt() }}"
+        val dataList = repository.getDataForCurrentDay(date)
+        return if (dataType == "steps") {
+            aggregateDailySteps(dataList, date)
         } else {
-            val hrMap = mutableMapOf<String, MutableList<Float>>()
-            for (item in dataList) {
-                if (item.heartRate != null) {
-                    val hhmm = item.date.substring(11, 16)
-                    val hh = hhmm.substring(0, 2)
-                    val mm = hhmm.substring(3, 5).toIntOrNull() ?: 0
-                    val min5 = (mm / 5) * 5
-                    val min5Str = if (min5 < 10) "0$min5" else "$min5"
-                    val label = "$hh:$min5Str"
-                    val list = hrMap.getOrPut(label) { mutableListOf() }
-                    list.add(item.heartRate)
-                }
-            }
-            val aggregatedData = mutableListOf<Pair<String, Number>>()
-            for ((key, list) in hrMap) {
-                val avg = list.sum() / list.size
-                aggregatedData.add(key to avg)
-            }
-            val xLabels = aggregatedData.map { it.first }
-            val allRates = dataList.mapNotNull { it.heartRate }
-            val summaryText = if (allRates.isEmpty()) "No data" else "Avg Heart Rate: ${(allRates.average()).toInt()} bpm"
-            return AggregationResult(aggregatedData, xLabels, summaryText, date)
+            aggregateDailyHeartRate(dataList, date)
         }
+    }
+
+    private fun aggregateDailySteps(dataList: List<FitnessEntity>, date: String): AggregationResult {
+        val map = mutableMapOf<String, Int>()
+        for (item in dataList) {
+            val time = item.date.substring(11, 13)
+            val steps = item.steps ?: 0
+            map[time] = (map[time] ?: 0) + steps
+        }
+        val aggregatedData = map.map { (key, value) -> key to value }
+        val xLabels = aggregatedData.map { it.first }
+        val summaryText = "Total Steps: ${aggregatedData.sumBy { it.second.toInt() }}"
+        return AggregationResult(aggregatedData, xLabels, summaryText, date)
+    }
+
+    private fun aggregateDailyHeartRate(dataList: List<FitnessEntity>, date: String): AggregationResult {
+        val hrMap = mutableMapOf<String, MutableList<Float>>()
+        for (item in dataList) {
+            if (item.heartRate != null) {
+                val hhmm = item.date.substring(11, 16)
+                val hh = hhmm.substring(0, 2)
+                val mm = hhmm.substring(3, 5).toIntOrNull() ?: 0
+                val min5 = (mm / 5) * 5
+                val min5Str = if (min5 < 10) "0$min5" else "$min5"
+                val label = "$hh:$min5Str"
+                val list = hrMap.getOrPut(label) { mutableListOf() }
+                list.add(item.heartRate)
+            }
+        }
+        val aggregatedData = mutableListOf<Pair<String, Number>>()
+        for ((key, list) in hrMap) {
+            val avg = list.sum() / list.size
+            aggregatedData.add(key to avg)
+        }
+        val xLabels = aggregatedData.map { it.first }
+        val allRates = dataList.mapNotNull { it.heartRate }
+        val summaryText =
+            if (allRates.isEmpty()) "No data" else "Avg Heart Rate: ${(allRates.average()).toInt()} bpm"
         return AggregationResult(aggregatedData, xLabels, summaryText, date)
     }
 
     private suspend fun calculateWeeklyOrMonthlyData(startDate: String, endDate: String, dataType: String): AggregationResult {
         val resultData = mutableListOf<Any>()
         val xLabels = mutableListOf<String>()
-        val calendar = Calendar.getInstance()
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val calendar = Calendar.getInstance()
         calendar.time = sdf.parse(startDate)
         val end = sdf.parse(endDate)
-        var total = 0
-        var count = 0
+        var totalSteps = 0
         val pulseList = mutableListOf<Float>()
         while (!calendar.time.after(end)) {
             val dayString = sdf.format(calendar.time)
             if (dataType == "steps") {
-                val steps = fitnessDao.getDataForCurrentDay(dayString).sumBy { it.steps ?: 0 }
+                val dayList = repository.getDataForCurrentDay(dayString)
+                val steps = dayList.sumBy { it.steps ?: 0 }
                 resultData.add(dayString to steps)
-                total += steps
+                totalSteps += steps
             } else {
-                val rates = fitnessDao.getDataForCurrentDay(dayString).mapNotNull { it.heartRate }
+                val rates = repository.getDataForCurrentDay(dayString).mapNotNull { it.heartRate }
                 if (rates.isNotEmpty()) {
                     val min = rates.minOrNull() ?: 0f
                     val max = rates.maxOrNull() ?: 0f
@@ -115,17 +124,20 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
             }
             xLabels.add(dayString)
             calendar.add(Calendar.DAY_OF_YEAR, 1)
-            count++
         }
-        val summaryText = if (dataType == "steps") "Total Steps: $total" else if (pulseList.isEmpty()) "No data" else "Average Heart Rate: ${(pulseList.average()).toInt()} bpm"
+        val summaryText = if (dataType == "steps") {
+            "Total Steps: $totalSteps"
+        } else {
+            if (pulseList.isEmpty()) "No data" else "Average Heart Rate: ${(pulseList.average()).toInt()} bpm"
+        }
         return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
     }
 
     private suspend fun calculateYearlyData(startDate: String, endDate: String, dataType: String): AggregationResult {
         val resultData = mutableListOf<Any>()
         val xLabels = mutableListOf<String>()
-        val calendar = Calendar.getInstance()
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val calendar = Calendar.getInstance()
         calendar.time = sdf.parse(startDate)
         val end = sdf.parse(endDate)
         var totalSteps = 0
@@ -137,7 +149,7 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
             monthEnd.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
             val monthStartString = sdf.format(monthStart.time)
             val monthEndString = sdf.format(monthEnd.time)
-            val dataRange = fitnessDao.getDataForRange(monthStartString, monthEndString)
+            val dataRange = repository.getDataForRange(monthStartString, monthEndString)
             if (dataType == "steps") {
                 val steps = dataRange.sumBy { it.steps ?: 0 }
                 val label = monthStart.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.ENGLISH)
@@ -160,7 +172,11 @@ class GraphDataProcessor(private val fitnessDao: FitnessDao) {
             }
             calendar.add(Calendar.MONTH, 1)
         }
-        val summaryText = if (dataType == "steps") "Total Steps: $totalSteps" else if (allRates.isEmpty()) "No data" else "Average Heart Rate: ${(allRates.average()).toInt()} bpm"
+        val summaryText = if (dataType == "steps") {
+            "Total Steps: $totalSteps"
+        } else {
+            if (allRates.isEmpty()) "No data" else "Average Heart Rate: ${(allRates.average()).toInt()} bpm"
+        }
         return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
     }
 }

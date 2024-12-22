@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,7 @@ class MonthGraphFragment : Fragment() {
 
     private lateinit var viewPager: ViewPager2
     private var dataType: String = "steps"
+    private lateinit var repository: FitnessRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,10 +33,12 @@ class MonthGraphFragment : Fragment() {
         viewPager = view.findViewById(R.id.monthGraphPager)
 
         val database = FitnessDatabase.getDatabase(requireContext())
+        repository = FitnessRepository(database.fitnessDao())
+
         dataType = arguments?.getString("dataType") ?: "steps"
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val (totalMonths, currentMonthPosition) = getTotalMonthsCount(database)
+            val (totalMonths, currentMonthPosition) = getTotalMonthsCount()
 
             val adapter = UniversalGraphPagerAdapter(
                 fragment = this@MonthGraphFragment,
@@ -53,9 +57,9 @@ class MonthGraphFragment : Fragment() {
         return view
     }
 
-    private suspend fun getTotalMonthsCount(database: FitnessDatabase): Pair<Int, Int> {
+    private suspend fun getTotalMonthsCount(): Pair<Int, Int> {
         return withContext(Dispatchers.IO) {
-            val firstEntryDateString = database.fitnessDao().getFirstEntryDate() ?: return@withContext Pair(1, 0)
+            val firstEntryDateString = repository.getFirstEntryDate() ?: return@withContext Pair(1, 0)
             val firstEntryDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(firstEntryDateString) ?: return@withContext Pair(1, 0)
 
             val calendar = Calendar.getInstance()

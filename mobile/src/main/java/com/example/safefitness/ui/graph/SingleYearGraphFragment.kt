@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.utils.AggregationPeriod
 import com.example.safefitness.utils.DayPulseData
 import com.example.safefitness.utils.GraphDataProcessor
@@ -18,24 +19,31 @@ import lecho.lib.hellocharts.view.ColumnChartView
 import java.util.Calendar
 
 class SingleYearGraphFragment : Fragment() {
+
     private lateinit var graphView: ColumnChartView
     private lateinit var summaryText: TextView
     private lateinit var dateRangeText: TextView
     private lateinit var dataProcessor: GraphDataProcessor
     private var year: Int = 0
     private var dataType: String = "steps"
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_single_year_graph, container, false)
         graphView = view.findViewById(R.id.yearColumnChartView)
         summaryText = view.findViewById(R.id.yearGraphSummaryText)
         dateRangeText = view.findViewById(R.id.yearGraphDateRangeText)
+
         val database = FitnessDatabase.getDatabase(requireContext())
-        dataProcessor = GraphDataProcessor(database.fitnessDao())
+        val repository = FitnessRepository(database.fitnessDao())
+        dataProcessor = GraphDataProcessor(repository)
+
         year = arguments?.getInt("year") ?: Calendar.getInstance().get(Calendar.YEAR)
         dataType = arguments?.getString("dataType") ?: "steps"
+
         loadYearData()
         return view
     }
+
     private fun loadYearData() {
         viewLifecycleOwner.lifecycleScope.launch {
             val startDate = "$year-01-01"
@@ -46,10 +54,12 @@ class SingleYearGraphFragment : Fragment() {
             updateGraph(result.aggregatedData)
         }
     }
+
     private fun updateGraph(data: List<Any>) {
         var maxYValue = 0f
         val columns = mutableListOf<Column>()
         val axisValues = mutableListOf<AxisValue>()
+
         if (dataType == "steps") {
             data.forEachIndexed { index, item ->
                 if (item is Pair<*, *>) {
@@ -61,9 +71,10 @@ class SingleYearGraphFragment : Fragment() {
                     columns.add(Column(listOf(subcolumn)).apply { setHasLabels(true) })
                 }
             }
-            val columnChartData = ColumnChartData(columns)
-            columnChartData.axisXBottom = Axis(axisValues).setName("Month")
-            columnChartData.axisYLeft = Axis().setName("Steps")
+            val columnChartData = ColumnChartData(columns).apply {
+                axisXBottom = Axis(axisValues).setName("Month")
+                axisYLeft = Axis().setName("Steps")
+            }
             graphView.columnChartData = columnChartData
         } else {
             data.forEachIndexed { index, item ->
@@ -78,16 +89,19 @@ class SingleYearGraphFragment : Fragment() {
                     columns.add(Column(listOf(minPulseValue, maxPulseValue)).apply { setHasLabels(true) })
                 }
             }
-            val columnChartData = ColumnChartData(columns)
-            columnChartData.axisXBottom = Axis(axisValues).setName("Month")
-            columnChartData.axisYLeft = Axis().setName("BPM")
+            val columnChartData = ColumnChartData(columns).apply {
+                axisXBottom = Axis(axisValues).setName("Month")
+                axisYLeft = Axis().setName("BPM")
+            }
             graphView.columnChartData = columnChartData
         }
+
         val viewport = Viewport(graphView.maximumViewport)
         viewport.top = maxYValue * 1.1f
         graphView.maximumViewport = viewport
         graphView.currentViewport = viewport
     }
+
     companion object {
         fun newInstance(year: Int, dataType: String): SingleYearGraphFragment {
             val fragment = SingleYearGraphFragment()

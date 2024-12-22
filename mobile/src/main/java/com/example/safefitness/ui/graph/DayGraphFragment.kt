@@ -9,8 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
-import com.example.safefitness.data.FitnessDao
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,7 @@ class DayGraphFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var dateText: TextView
     private lateinit var summaryText: TextView
-    private lateinit var fitnessDao: FitnessDao
+    private lateinit var repository: FitnessRepository
 
     private var dataType: String = "steps"
 
@@ -37,13 +37,13 @@ class DayGraphFragment : Fragment() {
         summaryText = view.findViewById(R.id.dayGraphSummaryText)
 
         val database = FitnessDatabase.getDatabase(requireContext())
-        fitnessDao = database.fitnessDao()
+        repository = FitnessRepository(database.fitnessDao())
 
         dataType = arguments?.getString("dataType") ?: "steps"
 
         viewLifecycleOwner.lifecycleScope.launch {
             val availableDaysCount = withContext(Dispatchers.IO) {
-                fitnessDao.getAvailableDaysCount()
+                repository.getAvailableDaysCount()
             }
 
             setupViewPager(availableDaysCount)
@@ -83,9 +83,9 @@ class DayGraphFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val summary = withContext(Dispatchers.IO) {
                 if (dataType == "steps") {
-                    fitnessDao.getTotalStepsForCurrentDay(date)
+                    repository.getTotalStepsForCurrentDay(date)
                 } else {
-                    fitnessDao.getDataForCurrentDay(date).mapNotNull { it.heartRate }.average().toInt()
+                    repository.getDataForCurrentDay(date).mapNotNull { it.heartRate }.average().toInt()
                 }
             }
 

@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
+import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,7 @@ class YearGraphFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var database: FitnessDatabase
     private var dataType: String = "steps"
+    private lateinit var repository: FitnessRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,6 +33,8 @@ class YearGraphFragment : Fragment() {
         viewPager = view.findViewById(R.id.yearGraphPager)
 
         database = FitnessDatabase.getDatabase(requireContext())
+        repository = FitnessRepository(database.fitnessDao())
+
         dataType = arguments?.getString("dataType") ?: "steps"
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -43,7 +47,7 @@ class YearGraphFragment : Fragment() {
     private suspend fun setupAdapter() {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         val earliestYear = withContext(Dispatchers.IO) {
-            database.fitnessDao().getFirstEntryDate()?.let { getYearFromDate(it) } ?: currentYear
+            repository.getFirstEntryDate()?.let { getYearFromDate(it) } ?: currentYear
         }
 
         val totalYears = (currentYear - earliestYear + 1).coerceAtLeast(1)

@@ -12,7 +12,7 @@ import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessRepository
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
-import com.example.safefitness.utils.DateUtils
+import com.example.safefitness.utils.date.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

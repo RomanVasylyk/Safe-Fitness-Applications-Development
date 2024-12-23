@@ -10,12 +10,10 @@ import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessRepository
-import com.example.safefitness.utils.AggregationPeriod
-import com.example.safefitness.utils.ColumnChartHelper
-import com.example.safefitness.utils.DayPulseData
-import com.example.safefitness.utils.GraphDataProcessor
+import com.example.safefitness.utils.aggregation.AggregationPeriod
+import com.example.safefitness.utils.chart.ColumnChartHelper
+import com.example.safefitness.utils.aggregation.GraphDataProcessor
 import kotlinx.coroutines.launch
-import lecho.lib.hellocharts.model.*
 import lecho.lib.hellocharts.view.ColumnChartView
 
 class SingleWeekGraphFragment : Fragment() {

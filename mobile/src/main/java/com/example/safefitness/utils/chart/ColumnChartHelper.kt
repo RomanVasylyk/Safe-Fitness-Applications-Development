@@ -1,6 +1,7 @@
-package com.example.safefitness.utils
+package com.example.safefitness.utils.chart
 
 import android.content.Context
+import com.example.safefitness.utils.aggregation.DayPulseData
 import lecho.lib.hellocharts.model.Axis
 import lecho.lib.hellocharts.model.AxisValue
 import lecho.lib.hellocharts.model.Column

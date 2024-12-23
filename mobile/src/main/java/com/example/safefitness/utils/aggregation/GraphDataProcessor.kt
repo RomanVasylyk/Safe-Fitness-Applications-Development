@@ -1,4 +1,4 @@
-package com.example.safefitness.utils
+package com.example.safefitness.utils.aggregation
 
 import com.example.safefitness.data.FitnessEntity
 import com.example.safefitness.data.FitnessRepository

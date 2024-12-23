@@ -16,7 +16,7 @@ import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessEntity
 import com.example.safefitness.data.WearDataListener
 import com.example.safefitness.ui.graph.FullScreenGraphActivity
-import com.example.safefitness.utils.GraphManager
+import com.example.safefitness.utils.chart.GraphManager
 import com.google.android.gms.wearable.Wearable
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.CoroutineScope

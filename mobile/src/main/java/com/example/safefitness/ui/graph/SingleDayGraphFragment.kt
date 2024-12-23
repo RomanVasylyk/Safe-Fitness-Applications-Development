@@ -9,10 +9,10 @@ import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessRepository
-import com.example.safefitness.utils.AggregationPeriod
-import com.example.safefitness.utils.DayPulseData
-import com.example.safefitness.utils.GraphDataProcessor
-import com.example.safefitness.utils.GraphManager
+import com.example.safefitness.utils.aggregation.AggregationPeriod
+import com.example.safefitness.utils.aggregation.DayPulseData
+import com.example.safefitness.utils.aggregation.GraphDataProcessor
+import com.example.safefitness.utils.chart.GraphManager
 import kotlinx.coroutines.launch
 import lecho.lib.hellocharts.view.LineChartView
 

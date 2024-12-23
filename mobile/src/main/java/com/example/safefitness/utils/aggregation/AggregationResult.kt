@@ -1,4 +1,4 @@
-package com.example.safefitness.utils
+package com.example.safefitness.utils.aggregation
 
 data class AggregationResult(
     val aggregatedData: List<Any>,

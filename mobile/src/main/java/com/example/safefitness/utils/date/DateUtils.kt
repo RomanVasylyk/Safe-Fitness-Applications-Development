@@ -1,4 +1,4 @@
-package com.example.safefitness.utils
+package com.example.safefitness.utils.date
 
 import java.text.SimpleDateFormat
 import java.util.*

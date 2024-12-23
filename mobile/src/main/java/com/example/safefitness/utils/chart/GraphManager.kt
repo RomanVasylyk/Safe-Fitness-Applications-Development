@@ -1,4 +1,4 @@
-package com.example.safefitness.utils
+package com.example.safefitness.utils.chart
 
 import android.content.Context
 import lecho.lib.hellocharts.formatter.SimpleAxisValueFormatter

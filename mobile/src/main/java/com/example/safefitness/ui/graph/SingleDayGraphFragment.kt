@@ -29,7 +29,7 @@ class SingleDayGraphFragment : Fragment() {
 
         val database = FitnessDatabase.getDatabase(requireContext())
         val repository = FitnessRepository(database.fitnessDao())
-        dataProcessor = GraphDataProcessor(repository)
+        dataProcessor = GraphDataProcessor(repository, requireContext())
 
         graphManager = GraphManager()
         val date = arguments?.getString("date") ?: ""
@@ -45,9 +45,15 @@ class SingleDayGraphFragment : Fragment() {
             graphManager.updateGraph(
                 graphView,
                 convertToPairs(result.aggregatedData),
-                if (dataType == "steps") "Steps for $day" else "Heart Rate for $day",
-                "Time",
-                if (dataType == "steps") "Steps" else "BPM",
+                if (dataType == "steps")
+                    getString(R.string.steps_for_day, day)
+                else
+                    getString(R.string.heart_rate_for_day, day),
+                getString(R.string.time),
+                if (dataType == "steps")
+                    getString(R.string.steps)
+                else
+                    getString(R.string.bpm),
                 requireContext()
             )
         }

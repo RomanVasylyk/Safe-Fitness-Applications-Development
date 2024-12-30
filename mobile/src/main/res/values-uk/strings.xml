@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Safe Fitness</string>
+    <string name="daily_goal">Щоденна ціль</string>
+    <string name="total_steps">Кроки: %1$d</string>
+    <string name="last_heart_rate">Ост. пульс: %1$s уд/хв</string>
+    <string name="avg_heart_rate">Сер. пульс:\n %1$s уд/хв</string>
+    <string name="min_heart_rate">Мін. пульс:\n %1$s уд/хв</string>
+    <string name="max_heart_rate">Макс. пульс:\n %1$s уд/хв</string>
+    <string name="goal_achieved">Ціль досягнута! %1$d/%2$d кроків</string>
+    <string name="daily_goal_1">Щоденна ціль: %1$d/%2$d кроків</string>
+    <string name="goal_dialog_title">Встановити ціль</string>
+    <string name="select_goal">Оберіть щоденну ціль кроків:</string>
+    <string name="goal_dialog_positive">OK</string>
+    <string name="goal_dialog_negative">Скасувати</string>
+    <string name="goal_selected_message">Вибрано ціль: %1$d кроків</string>
+    <string name="steps_over_time">Кроки за часом</string>
+    <string name="heart_rate_over_time">Пульс за часом</string>
+    <string name="tab_day">День</string>
+    <string name="tab_week">Тиждень</string>
+    <string name="tab_month">Місяць</string>
+    <string name="tab_year">Рік</string>
+    <string name="date_label">Дата: %1$s</string>
+    <string name="total_steps_label">Загальна кількість кроків: %1$d</string>
+    <string name="average_heart_rate_label">Середній пульс: %1$d уд/хв</string>
+    <string name="x_axis_day">День</string>
+    <string name="y_axis_steps">Кроки</string>
+    <string name="y_axis_bpm">Уд/хв</string>
+    <string name="date_range">Діапазон дат</string>
+    <string name="summary">Підсумок</string>
+    <string name="steps_for_day">Кроки за %1$s</string>
+    <string name="heart_rate_for_day">Пульс за %1$s</string>
+    <string name="time">Час</string>
+    <string name="steps">Кроки</string>
+    <string name="bpm">Уд/хв</string>
+    <string name="total_steps_summary">Загальна кількість кроків: %1$d</string>
+    <string name="avg_heart_rate_label">Середній пульс: %1$d уд/хв</string>
+    <string name="no_data_label">Немає даних</string>
+
+    <string name="heart_rate_label">Пульс</string>
+</resources>

@@ -1,3 +1,40 @@
 <resources>
     <string name="app_name">Safe Fitness</string>
+    <string name="daily_goal">Daily Goal</string>
+    <string name="total_steps">Total Steps: %1$d</string>
+    <string name="last_heart_rate">Last Heart Rate: %1$s bpm</string>
+    <string name="avg_heart_rate">Avg:\n %1$s bpm</string>
+    <string name="min_heart_rate">Min:\n %1$s bpm</string>
+    <string name="max_heart_rate">Max:\n %1$s bpm</string>
+    <string name="goal_achieved">Goal Achieved! %1$d/%2$d steps</string>
+    <string name="daily_goal_1">Daily Goal: %1$d/%2$d steps</string>
+    <string name="goal_dialog_title">Set Daily Goal</string>
+    <string name="select_goal">Select your daily steps goal:</string>
+    <string name="goal_dialog_positive">OK</string>
+    <string name="goal_dialog_negative">Cancel</string>
+    <string name="goal_selected_message">Selected goal: %1$d steps</string>
+    <string name="steps_over_time">Steps Over Time</string>
+    <string name="heart_rate_over_time">Heart Rate Over Time</string>
+    <string name="tab_day">Day</string>
+    <string name="tab_week">Week</string>
+    <string name="tab_month">Month</string>
+    <string name="tab_year">Year</string>
+    <string name="date_label">Date: %1$s</string>
+    <string name="total_steps_label">Total Steps: %1$d</string>
+    <string name="average_heart_rate_label">Average Heart Rate: %1$d BPM</string>
+    <string name="x_axis_day">Day</string>
+    <string name="y_axis_steps">Steps</string>
+    <string name="y_axis_bpm">BPM</string>
+    <string name="date_range">Date Range</string>
+    <string name="summary">Summary</string>
+    <string name="steps_for_day">Steps for %1$s</string>
+    <string name="heart_rate_for_day">Heart Rate for %1$s</string>
+    <string name="time">Time</string>
+    <string name="steps">Steps</string>
+    <string name="bpm">BPM</string>
+    <string name="total_steps_summary">Total Steps: %1$d</string>
+    <string name="avg_heart_rate_label">Average Heart Rate: %1$d BPM</string>
+    <string name="no_data_label">No data</string>
+
+    <string name="heart_rate_label">Heart Rate</string>
 </resources>

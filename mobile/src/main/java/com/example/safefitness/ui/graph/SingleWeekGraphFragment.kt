@@ -34,7 +34,7 @@ class SingleWeekGraphFragment : Fragment() {
 
         val database = FitnessDatabase.getDatabase(requireContext())
         val repository = FitnessRepository(database.fitnessDao())
-        dataProcessor = GraphDataProcessor(repository)
+        dataProcessor = GraphDataProcessor(repository, requireContext())
 
         startDate = arguments?.getString("startDate") ?: ""
         endDate = arguments?.getString("endDate") ?: ""
@@ -53,8 +53,9 @@ class SingleWeekGraphFragment : Fragment() {
     }
 
     private fun updateGraph(data: List<Any>) {
-        val xAxisName = "Day"
-        val yAxisName = if (dataType == "steps") "Steps" else "BPM"
+        val xAxisName = getString(R.string.x_axis_day)
+        val yAxisName = if (dataType == "steps") getString(R.string.y_axis_steps) else getString(R.string.y_axis_bpm)
+
         ColumnChartHelper.buildColumnChart(
             chartView = graphView,
             data = data,

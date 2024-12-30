@@ -117,31 +117,67 @@ class MainActivity : AppCompatActivity() {
             val currentGoal = getCurrentGoal()
 
             runOnUiThread {
-                totalStepsText.text = "Total Steps: $totalSteps"
-                lastHeartRateText.text = "Last Heart Rate: ${lastHeartRate?.toInt() ?: "N/A"} bpm"
-                avgHeartRateText.text = "Avg: ${avgHeartRate?.toInt() ?: "N/A"} bpm"
-                minHeartRateText.text = "Min: ${minHeartRate?.toInt() ?: "N/A"} bpm"
-                maxHeartRateText.text = "Max: ${maxHeartRate?.toInt() ?: "N/A"} bpm"
+                val totalStepsStr = getString(R.string.total_steps, totalSteps)
+                val lastHeartRateStr = if (lastHeartRate != null) {
+                    getString(R.string.last_heart_rate, lastHeartRate.toInt().toString())
+                } else {
+                    getString(R.string.last_heart_rate, "N/A")
+                }
+                val avgHeartRateStr = if (avgHeartRate != null) {
+                    getString(R.string.avg_heart_rate, avgHeartRate.toInt().toString())
+                } else {
+                    getString(R.string.avg_heart_rate, "N/A")
+                }
+                val minHeartRateStr = if (minHeartRate != null) {
+                    getString(R.string.min_heart_rate, minHeartRate.toInt().toString())
+                } else {
+                    getString(R.string.min_heart_rate, "N/A")
+                }
+                val maxHeartRateStr = if (maxHeartRate != null) {
+                    getString(R.string.max_heart_rate, maxHeartRate.toInt().toString())
+                } else {
+                    getString(R.string.max_heart_rate, "N/A")
+                }
 
-                graphManager.updateGraph(stepsGraph, aggregatedSteps, "Steps", "Time", "Steps", this@MainActivity)
-                graphManager.updateGraph(heartRateGraph, aggregatedHeartRate, "Heart Rate", "Time", "BPM", this@MainActivity)
+                totalStepsText.text = totalStepsStr
+                lastHeartRateText.text = lastHeartRateStr
+                avgHeartRateText.text = avgHeartRateStr
+                minHeartRateText.text = minHeartRateStr
+                maxHeartRateText.text = maxHeartRateStr
+
+                graphManager.updateGraph(
+                    stepsGraph,
+                    aggregatedSteps,
+                    getString(R.string.steps),
+                    getString(R.string.time),
+                    getString(R.string.steps),
+                    this@MainActivity
+                )
+                graphManager.updateGraph(
+                    heartRateGraph,
+                    aggregatedHeartRate,
+                    getString(R.string.heart_rate_label),
+                    getString(R.string.time),
+                    getString(R.string.bpm),
+                    this@MainActivity
+                )
 
                 val dailyGoalTitle = findViewById<TextView>(R.id.dailyGoalTitle)
-                val dailyGoalProgress = findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.dailyGoalProgress)
-
+                val dailyGoalProgress =
+                    findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(
+                        R.id.dailyGoalProgress
+                    )
                 dailyGoalProgress.max = currentGoal
 
                 if (totalSteps >= currentGoal) {
-                    dailyGoalTitle.text = "Goal Achieved! ${totalSteps}/$currentGoal steps"
-                    dailyGoalProgress.setProgress(currentGoal, /*animated=*/true)
-
+                    dailyGoalTitle.text = getString(R.string.goal_achieved, totalSteps, currentGoal)
+                    dailyGoalProgress.setProgress(currentGoal, true)
                     val successColor = getColor(R.color.successColor)
                     dailyGoalProgress.setIndicatorColor(successColor)
                     dailyGoalTitle.setTextColor(successColor)
                 } else {
-                    dailyGoalTitle.text = "Daily Goal: $totalSteps/$currentGoal steps"
-                    dailyGoalProgress.setProgress(totalSteps, /*animated=*/true)
-
+                    dailyGoalTitle.text = getString(R.string.daily_goal_1, totalSteps, currentGoal)
+                    dailyGoalProgress.setProgress(totalSteps, true)
                     val primaryColor = getColor(R.color.primaryColor)
                     dailyGoalProgress.setIndicatorColor(primaryColor)
                     dailyGoalTitle.setTextColor(primaryColor)
@@ -197,15 +233,20 @@ class MainActivity : AppCompatActivity() {
         numberPicker.value = currentGoalIndex
 
         val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.goal_dialog_title))
             .setView(dialogView)
-            .setPositiveButton("OK") { dialog, _ ->
+            .setPositiveButton(getString(R.string.goal_dialog_positive)) { dialog, _ ->
                 val selectedGoal = goals[numberPicker.value]
                 saveGoal(selectedGoal)
-                Toast.makeText(this, "Selected goal: $selectedGoal steps", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.goal_selected_message, selectedGoal),
+                    Toast.LENGTH_SHORT
+                ).show()
                 dialog.dismiss()
                 updateData()
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .setNegativeButton(getString(R.string.goal_dialog_negative)) { dialog, _ ->
                 dialog.dismiss()
             }
 

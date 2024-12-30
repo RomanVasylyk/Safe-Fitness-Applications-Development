@@ -25,11 +25,10 @@ class FullScreenGraphActivity : AppCompatActivity() {
         dataType = intent.getStringExtra("dataType") ?: "steps"
 
         tabLayout = findViewById(R.id.tabLayout)
-        tabLayout.addTab(tabLayout.newTab().setText("Day").setIcon(R.drawable.ic_day))
-        tabLayout.addTab(tabLayout.newTab().setText("Week").setIcon(R.drawable.ic_week))
-        tabLayout.addTab(tabLayout.newTab().setText("Month").setIcon(R.drawable.ic_month))
-        tabLayout.addTab(tabLayout.newTab().setText("Year").setIcon(R.drawable.ic_year))
-
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.tab_day)).setIcon(R.drawable.ic_day))
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.tab_week)).setIcon(R.drawable.ic_week))
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.tab_month)).setIcon(R.drawable.ic_month))
+        tabLayout.addTab(tabLayout.newTab().setText(getString(R.string.tab_year)).setIcon(R.drawable.ic_year))
 
         replaceFragment(DayGraphFragment.newInstance(dataType))
 

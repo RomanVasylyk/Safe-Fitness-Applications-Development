@@ -78,7 +78,7 @@ class DayGraphFragment : Fragment() {
 
     private fun updateSummary(position: Int, availableDaysCount: Int) {
         val date = DateUtils.getDayDate(position, availableDaysCount).first
-        dateText.text = "Date: $date"
+        dateText.text = getString(R.string.date_label, date)
 
         viewLifecycleOwner.lifecycleScope.launch {
             val summary = withContext(Dispatchers.IO) {
@@ -90,9 +90,9 @@ class DayGraphFragment : Fragment() {
             }
 
             val summaryLabel = if (dataType == "steps") {
-                "Total Steps: $summary"
+                getString(R.string.total_steps_label, summary)
             } else {
-                "Average Heart Rate: $summary BPM"
+                getString(R.string.average_heart_rate_label, summary)
             }
 
             summaryText.text = summaryLabel

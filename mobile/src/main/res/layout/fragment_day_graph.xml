@@ -30,7 +30,7 @@
                 android:id="@+id/dayGraphDateText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Date: YYYY-MM-DD"
+                android:text="@string/date_label"
                 android:textColor="@android:color/darker_gray"
                 android:textSize="16sp"
                 android:layout_marginBottom="8dp"
@@ -41,7 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Total Steps: 0"
+                android:text="@string/total_steps_label"
                 android:textColor="@android:color/darker_gray"
                 android:textSize="16sp"
                 android:textStyle="italic" />

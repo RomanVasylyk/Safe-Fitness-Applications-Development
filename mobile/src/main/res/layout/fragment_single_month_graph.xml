@@ -24,7 +24,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Date Range"
+                android:text="@string/date_range"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/darker_gray"/>
@@ -34,7 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Summary"
+                android:text="@string/summary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/darker_gray"/>

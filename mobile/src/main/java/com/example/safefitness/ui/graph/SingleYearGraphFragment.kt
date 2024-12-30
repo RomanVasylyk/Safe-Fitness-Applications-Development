@@ -34,7 +34,7 @@ class SingleYearGraphFragment : Fragment() {
 
         val database = FitnessDatabase.getDatabase(requireContext())
         val repository = FitnessRepository(database.fitnessDao())
-        dataProcessor = GraphDataProcessor(repository)
+        dataProcessor = GraphDataProcessor(repository, requireContext())
 
         year = arguments?.getInt("year") ?: Calendar.getInstance().get(Calendar.YEAR)
         dataType = arguments?.getString("dataType") ?: "steps"
@@ -55,8 +55,11 @@ class SingleYearGraphFragment : Fragment() {
     }
 
     private fun updateGraph(data: List<Any>) {
-        val xAxisName = "Month"
-        val yAxisName = if (dataType == "steps") "Steps" else "BPM"
+        val xAxisName = getString(R.string.tab_month)
+        val yAxisName = if (dataType == "steps")
+            getString(R.string.steps)
+        else
+            getString(R.string.bpm)
 
         ColumnChartHelper.buildColumnChart(
             chartView = graphView,

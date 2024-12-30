@@ -1,5 +1,7 @@
 package com.example.safefitness.utils.aggregation
 
+import android.content.Context
+import com.example.safefitness.R
 import com.example.safefitness.data.FitnessEntity
 import com.example.safefitness.data.FitnessRepository
 import kotlinx.coroutines.Dispatchers
@@ -7,7 +9,10 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class GraphDataProcessor(private val repository: FitnessRepository) {
+class GraphDataProcessor(
+    private val repository: FitnessRepository,
+    private val context: Context
+) {
 
     suspend fun aggregateData(
         startDate: String,
@@ -65,7 +70,7 @@ class GraphDataProcessor(private val repository: FitnessRepository) {
         }
         val aggregatedData = map.map { (key, value) -> key to value }
         val xLabels = aggregatedData.map { it.first }
-        val summaryText = "Total Steps: ${aggregatedData.sumBy { it.second.toInt() }}"
+        val summaryText = context.getString(R.string.total_steps_summary, aggregatedData.sumBy { it.second.toInt() })
         return AggregationResult(aggregatedData, xLabels, summaryText, date)
     }
 
@@ -90,8 +95,11 @@ class GraphDataProcessor(private val repository: FitnessRepository) {
         }
         val xLabels = aggregatedData.map { it.first }
         val allRates = dataList.mapNotNull { it.heartRate }
-        val summaryText =
-            if (allRates.isEmpty()) "No data" else "Avg Heart Rate: ${(allRates.average()).toInt()} bpm"
+        val summaryText = if (allRates.isEmpty()) {
+            context.getString(R.string.no_data_label)
+        } else {
+            context.getString(R.string.avg_heart_rate_label, allRates.average().toInt())
+        }
         return AggregationResult(aggregatedData, xLabels, summaryText, date)
     }
 
@@ -126,9 +134,13 @@ class GraphDataProcessor(private val repository: FitnessRepository) {
             calendar.add(Calendar.DAY_OF_YEAR, 1)
         }
         val summaryText = if (dataType == "steps") {
-            "Total Steps: $totalSteps"
+            context.getString(R.string.total_steps_summary, totalSteps)
         } else {
-            if (pulseList.isEmpty()) "No data" else "Average Heart Rate: ${(pulseList.average()).toInt()} bpm"
+            if (pulseList.isEmpty()) {
+                context.getString(R.string.no_data_label)
+            } else {
+                context.getString(R.string.avg_heart_rate_label, pulseList.average().toInt())
+            }
         }
         return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
     }
@@ -140,13 +152,16 @@ class GraphDataProcessor(private val repository: FitnessRepository) {
         val calendar = Calendar.getInstance()
         calendar.time = sdf.parse(startDate)
         val end = sdf.parse(endDate)
+
         var totalSteps = 0
         val allRates = mutableListOf<Float>()
+
         while (!calendar.time.after(end)) {
             val monthStart = calendar.clone() as Calendar
             monthStart.set(Calendar.DAY_OF_MONTH, 1)
             val monthEnd = calendar.clone() as Calendar
             monthEnd.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+
             val monthStartString = sdf.format(monthStart.time)
             val monthEndString = sdf.format(monthEnd.time)
             val dataRange = repository.getDataForRange(monthStartString, monthEndString)
@@ -172,11 +187,17 @@ class GraphDataProcessor(private val repository: FitnessRepository) {
             }
             calendar.add(Calendar.MONTH, 1)
         }
+
         val summaryText = if (dataType == "steps") {
-            "Total Steps: $totalSteps"
+            context.getString(R.string.total_steps_summary, totalSteps)
         } else {
-            if (allRates.isEmpty()) "No data" else "Average Heart Rate: ${(allRates.average()).toInt()} bpm"
+            if (allRates.isEmpty()) {
+                context.getString(R.string.no_data_label)
+            } else {
+                context.getString(R.string.avg_heart_rate_label, allRates.average().toInt())
+            }
         }
+
         return AggregationResult(resultData, xLabels, summaryText, "$startDate - $endDate")
     }
 }

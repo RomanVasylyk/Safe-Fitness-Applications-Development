@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Safe Fitness</string>
+    <string name="daily_goal">Denný cieľ</string>
+    <string name="total_steps">Kroky: %1$d</string>
+    <string name="last_heart_rate">Posl. pulz: %1$s bpm</string>
+    <string name="avg_heart_rate">Priem. pulz:\n %1$s bpm</string>
+    <string name="min_heart_rate">Min. pulz:\n %1$s bpm</string>
+    <string name="max_heart_rate">Max. pulz:\n %1$s bpm</string>
+    <string name="goal_achieved">Cieľ dosiahnutý! %1$d/%2$d krokov</string>
+    <string name="daily_goal_1">Denný cieľ: %1$d/%2$d krokov</string>
+    <string name="goal_dialog_title">Nastaviť cieľ</string>
+    <string name="select_goal">Vyberte si denný cieľ krokov:</string>
+    <string name="goal_dialog_positive">OK</string>
+    <string name="goal_dialog_negative">Zrušiť</string>
+    <string name="goal_selected_message">Zvolený cieľ: %1$d krokov</string>
+    <string name="steps_over_time">Kroky v priebehu času</string>
+    <string name="heart_rate_over_time">Tepová frekvencia v priebehu času</string>
+    <string name="tab_day">Deň</string>
+    <string name="tab_week">Týždeň</string>
+    <string name="tab_month">Mesiac</string>
+    <string name="tab_year">Rok</string>
+    <string name="date_label">Dátum: %1$s</string>
+    <string name="total_steps_label">Celkový počet krokov: %1$d</string>
+    <string name="average_heart_rate_label">Priemerný pulz: %1$d bpm</string>
+    <string name="x_axis_day">Deň</string>
+    <string name="y_axis_steps">Kroky</string>
+    <string name="y_axis_bpm">BPM</string>
+    <string name="date_range">Rozsah dátumov</string>
+    <string name="summary">Súhrn</string>
+    <string name="steps_for_day">Kroky za %1$s</string>
+    <string name="heart_rate_for_day">Srdcová frekvencia za %1$s</string>
+    <string name="time">Čas</string>
+    <string name="steps">Kroky</string>
+    <string name="bpm">BPM</string>
+    <string name="total_steps_summary">Celkový počet krokov: %1$d</string>
+    <string name="avg_heart_rate_label">Priemerný tep: %1$d BPM</string>
+    <string name="no_data_label">Žiadne údaje</string>
+
+    <string name="heart_rate_label">Tep</string>
+</resources>

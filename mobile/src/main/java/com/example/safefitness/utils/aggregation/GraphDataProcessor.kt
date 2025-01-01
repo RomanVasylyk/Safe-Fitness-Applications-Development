@@ -7,6 +7,8 @@ import com.example.safefitness.data.FitnessRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 class GraphDataProcessor(
@@ -76,23 +78,25 @@ class GraphDataProcessor(
 
     private fun aggregateDailyHeartRate(dataList: List<FitnessEntity>, date: String): AggregationResult {
         val hrMap = mutableMapOf<String, MutableList<Float>>()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+
         for (item in dataList) {
-            if (item.heartRate != null) {
+            item.heartRate?.let { heartRate ->
                 val hhmm = item.date.substring(11, 16)
-                val hh = hhmm.substring(0, 2)
-                val mm = hhmm.substring(3, 5).toIntOrNull() ?: 0
-                val min5 = (mm / 5) * 5
-                val min5Str = if (min5 < 10) "0$min5" else "$min5"
-                val label = "$hh:$min5Str"
-                val list = hrMap.getOrPut(label) { mutableListOf() }
-                list.add(item.heartRate)
+                val time = LocalTime.parse(hhmm, formatter)
+                val roundedMinutes = (time.minute / 5) * 5
+                val roundedTime = time.withMinute(roundedMinutes).withSecond(0)
+                val label = roundedTime.format(formatter)
+
+                hrMap.getOrPut(label) { mutableListOf() }.add(heartRate)
             }
         }
-        val aggregatedData = mutableListOf<Pair<String, Number>>()
-        for ((key, list) in hrMap) {
-            val avg = list.sum() / list.size
-            aggregatedData.add(key to avg)
-        }
+
+        val aggregatedData = hrMap
+            .map { (key, values) -> LocalTime.parse(key, formatter) to values.average().toFloat() }
+            .sortedBy { it.first }
+            .map { it.first.format(formatter) to it.second }
+
         val xLabels = aggregatedData.map { it.first }
         val allRates = dataList.mapNotNull { it.heartRate }
         val summaryText = if (allRates.isEmpty()) {
@@ -100,6 +104,7 @@ class GraphDataProcessor(
         } else {
             context.getString(R.string.avg_heart_rate_label, allRates.average().toInt())
         }
+
         return AggregationResult(aggregatedData, xLabels, summaryText, date)
     }
 

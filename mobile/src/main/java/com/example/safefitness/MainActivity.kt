@@ -1,7 +1,14 @@
 package com.example.safefitness
 
+import android.Manifest
+import android.app.AlertDialog
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -11,7 +18,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import com.example.safefitness.data.DataHandler
 import com.example.safefitness.data.FitnessDatabase
@@ -23,6 +31,7 @@ import com.example.safefitness.ui.main.MainViewModelFactory
 import com.example.safefitness.utils.chart.GraphManager
 import com.google.android.gms.wearable.Wearable
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import lecho.lib.hellocharts.view.LineChartView
 
 class MainActivity : AppCompatActivity() {
@@ -42,9 +51,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var minHeartRateText: TextView
     private lateinit var maxHeartRateText: TextView
     private lateinit var dailyGoalTitle: TextView
-    private lateinit var dailyGoalProgress: com.google.android.material.progressindicator.LinearProgressIndicator
+    private lateinit var dailyGoalProgress: LinearProgressIndicator
+
     private lateinit var wearDataListener: WearDataListener
     private val graphManager = GraphManager()
+
+    private val REQUIRED_PERMISSIONS = arrayOf(
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_SCAN
+    )
+
+    private val REQUEST_PERMISSIONS_CODE = 123
+    private val REQUEST_ENABLE_BT = 456
 
     companion object {
         private const val PREFS_NAME = "goal_prefs"
@@ -55,16 +73,71 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         val topAppBar = findViewById<MaterialToolbar>(R.id.topAppBar)
         setSupportActionBar(topAppBar)
+
         initViews()
+
         if (!isGoalSet()) saveGoal(DEFAULT_GOAL)
+
         wearDataListener = WearDataListener(dataHandler, { updateData() }, this)
         Wearable.getDataClient(this).addListener(wearDataListener)
+
         observeViewModel()
-        updateData()
+        requestPermissionsIfNeeded()
+
         stepsGraph.setOnClickListener { FullScreenGraphActivity.start(this, "steps") }
         heartRateGraph.setOnClickListener { FullScreenGraphActivity.start(this, "heartRate") }
+    }
+
+    private fun requestPermissionsIfNeeded() {
+        val toRequest = REQUIRED_PERMISSIONS.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (toRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), REQUEST_PERMISSIONS_CODE)
+        } else {
+            checkBluetooth()
+            updateData()
+        }
+    }
+
+    private fun checkBluetooth() {
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+
+        if (adapter != null && !adapter.isEnabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                        REQUEST_PERMISSIONS_CODE
+                    )
+                    return
+                }
+            }
+            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(intent, REQUEST_ENABLE_BT)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, results)
+        if (requestCode == REQUEST_PERMISSIONS_CODE) {
+            checkBluetooth()
+            updateData()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_ENABLE_BT) {
+            updateData()
+        }
     }
 
     private fun initViews() {
@@ -90,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         })
+
         mainViewModel.aggregatedHeartRate.observe(this, Observer {
             graphManager.updateGraph(
                 heartRateGraph,
@@ -100,37 +174,38 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         })
+
         mainViewModel.totalSteps.observe(this, Observer {
             val str = getString(R.string.total_steps, it)
             totalStepsText.text = str
             updateGoalProgress(it)
         })
+
         mainViewModel.lastHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.last_heart_rate, it.toInt().toString())
             } else getString(R.string.last_heart_rate, "N/A")
             lastHeartRateText.text = str
         })
+
         mainViewModel.avgHeartRate.observe(this, Observer {
             val str = getString(R.string.avg_heart_rate, it.toInt().toString())
             avgHeartRateText.text = str
         })
+
         mainViewModel.minHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.min_heart_rate, it.toInt().toString())
             } else getString(R.string.min_heart_rate, "N/A")
             minHeartRateText.text = str
         })
+
         mainViewModel.maxHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.max_heart_rate, it.toInt().toString())
             } else getString(R.string.max_heart_rate, "N/A")
             maxHeartRateText.text = str
         })
-    }
-
-    private fun updateData() {
-        mainViewModel.updateData(getCurrentGoal())
     }
 
     private fun updateGoalProgress(steps: Int) {
@@ -167,7 +242,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPopupMenu() {
         val anchorView = findViewById<View>(R.id.topAppBar)
-        val popupMenu = PopupMenu(this, anchorView, android.view.Gravity.END)
+        val popupMenu = PopupMenu(this, anchorView, Gravity.END)
         popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -224,6 +299,10 @@ class MainActivity : AppCompatActivity() {
     private fun isGoalSet(): Boolean {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.contains(KEY_GOAL)
+    }
+
+    private fun updateData() {
+        mainViewModel.updateData(getCurrentGoal())
     }
 
     override fun onDestroy() {

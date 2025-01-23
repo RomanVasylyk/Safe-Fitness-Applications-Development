@@ -1,4 +1,4 @@
-<lecho.lib.hellocharts.view.LineChartView
+<lecho.lib.hellocharts.view.ColumnChartView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/graphView"
     android:layout_width="match_parent"

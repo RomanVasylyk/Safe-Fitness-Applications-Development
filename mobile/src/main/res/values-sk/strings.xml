@@ -35,6 +35,12 @@
     <string name="total_steps_summary">Celkový počet krokov: %1$d</string>
     <string name="avg_heart_rate_label">Priemerný tep: %1$d BPM</string>
     <string name="no_data_label">Žiadne údaje</string>
+    <string name="language_dialog_title">Jazyk</string>
+    <string name="lang_english">Angličtina</string>
+    <string name="lang_slovak">Slovenčina</string>
+    <string name="lang_ukrainian">Ukrajinčina</string>
+    <string name="language_saved">Jazyk uložený: %1$s</string>
+    <string name="language_canceled">Výber jazyka bol zrušený</string>
 
     <string name="heart_rate_label">Tep</string>
 </resources>

@@ -64,15 +64,17 @@ class GraphDataProcessor(
     }
 
     private fun aggregateDailySteps(dataList: List<FitnessEntity>, date: String): AggregationResult {
-        val map = mutableMapOf<String, Int>()
+        val map = (0..23).associate { hour ->
+            hour.toString().padStart(2, '0') to 0
+        }.toMutableMap()
         for (item in dataList) {
-            val time = item.date.substring(11, 13)
-            val steps = item.steps ?: 0
-            map[time] = (map[time] ?: 0) + steps
+            val hh = item.date.substring(11, 13)
+            val s = item.steps ?: 0
+            map[hh] = map[hh]?.plus(s) ?: s
         }
-        val aggregatedData = map.map { (key, value) -> key to value }
+        val aggregatedData = map.map { (k, v) -> k to v }
         val xLabels = aggregatedData.map { it.first }
-        val summaryText = context.getString(R.string.total_steps_summary, aggregatedData.sumBy { it.second.toInt() })
+        val summaryText = context.getString(R.string.total_steps_summary, aggregatedData.sumBy { it.second })
         return AggregationResult(aggregatedData, xLabels, summaryText, date)
     }
 

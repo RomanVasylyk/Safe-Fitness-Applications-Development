@@ -14,6 +14,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.NumberPicker
 import android.widget.PopupMenu
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -33,6 +34,7 @@ import com.google.android.gms.wearable.Wearable
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import lecho.lib.hellocharts.view.LineChartView
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -68,9 +70,12 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "goal_prefs"
         private const val KEY_GOAL = "step_goal"
         private const val DEFAULT_GOAL = 10000
+        private const val KEY_LANG = "lang"
+        private const val DEFAULT_LANG = "en"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        loadLanguageFromPrefs()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -89,6 +94,21 @@ class MainActivity : AppCompatActivity() {
 
         stepsGraph.setOnClickListener { FullScreenGraphActivity.start(this, "steps") }
         heartRateGraph.setOnClickListener { FullScreenGraphActivity.start(this, "heartRate") }
+    }
+
+    private fun loadLanguageFromPrefs() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val langCode = prefs.getString(KEY_LANG, DEFAULT_LANG) ?: DEFAULT_LANG
+        applyLocale(langCode)
+    }
+
+    private fun applyLocale(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        createConfigurationContext(config)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun requestPermissionsIfNeeded() {
@@ -250,6 +270,10 @@ class MainActivity : AppCompatActivity() {
                     showSetGoalDialog()
                     true
                 }
+                R.id.popup_set_language -> {
+                    showLanguageDialog()
+                    true
+                }
                 else -> false
             }
         }
@@ -284,6 +308,46 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
         builder.create().show()
+    }
+
+    private fun showLanguageDialog() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentLang = prefs.getString(KEY_LANG, DEFAULT_LANG) ?: DEFAULT_LANG
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_set_language, null)
+        val radioGroup = dialogView.findViewById<RadioGroup>(R.id.languageRadioGroup)
+
+        when (currentLang) {
+            "en" -> radioGroup.check(R.id.radioEnglish)
+            "sk" -> radioGroup.check(R.id.radioSlovak)
+            "uk" -> radioGroup.check(R.id.radioUkrainian)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.language_dialog_title))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.goal_dialog_positive)) { dialog, _ ->
+                when (radioGroup.checkedRadioButtonId) {
+                    R.id.radioEnglish -> saveLanguage("en")
+                    R.id.radioSlovak -> saveLanguage("sk")
+                    R.id.radioUkrainian -> saveLanguage("uk")
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.goal_dialog_negative)) { dialog, _ ->
+                Toast.makeText(this, getString(R.string.language_canceled), Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    private fun saveLanguage(languageCode: String) {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_LANG, languageCode).apply()
+        Toast.makeText(this, getString(R.string.language_saved, languageCode), Toast.LENGTH_SHORT).show()
+        applyLocale(languageCode)
+        recreate()
     }
 
     private fun saveGoal(goal: Int) {

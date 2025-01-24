@@ -1,6 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/popup_set_goal"
         android:title="@string/goal_dialog_title" />
+    <item
+        android:id="@+id/popup_set_language"
+        android:title="@string/language_dialog_title" />
 </menu>

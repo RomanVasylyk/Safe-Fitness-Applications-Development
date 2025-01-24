@@ -35,6 +35,12 @@
     <string name="total_steps_summary">Загальна кількість кроків: %1$d</string>
     <string name="avg_heart_rate_label">Середній пульс: %1$d уд/хв</string>
     <string name="no_data_label">Немає даних</string>
+    <string name="language_dialog_title">Мова</string>
+    <string name="lang_english">Англійська</string>
+    <string name="lang_slovak">Словацька</string>
+    <string name="lang_ukrainian">Українська</string>
+    <string name="language_saved">Мову збережено: %1$s</string>
+    <string name="language_canceled">Вибір мови скасовано</string>
 
     <string name="heart_rate_label">Пульс</string>
 </resources>

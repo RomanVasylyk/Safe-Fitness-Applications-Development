@@ -66,7 +66,7 @@ class MainActivity : Activity() {
         startSensorService()
         startSyncingData()
         startUpdatingSteps()
-        updateUI(isTracking = true)
+        updateUI(true)
         showToast("Started Tracking")
     }
 
@@ -74,7 +74,7 @@ class MainActivity : Activity() {
         stopSensorService()
         stopSyncingData()
         stopUpdatingSteps()
-        updateUI(isTracking = false)
+        updateUI(false)
         showToast("Stopped Tracking")
     }
 
@@ -149,6 +149,8 @@ class MainActivity : Activity() {
             }
             val sevenDaysAgo = android.icu.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
             fitnessDao.deleteOldData(sevenDaysAgo)
+            val olderThanMillis = calendar.timeInMillis
+            FitnessDatabase.getDatabase(this@MainActivity).sentBatchDao().deleteOldConfirmedBatches(olderThanMillis)
         }
     }
 

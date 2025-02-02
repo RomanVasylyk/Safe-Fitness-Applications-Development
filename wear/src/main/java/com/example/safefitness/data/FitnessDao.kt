@@ -31,7 +31,7 @@ interface FitnessDao {
         }
     }
 
-    @Query("DELETE FROM fitness_data WHERE date < :sevenDaysAgo")
+    @Query("DELETE FROM fitness_data WHERE date < :sevenDaysAgo AND isSynced = 1")
     suspend fun deleteOldData(sevenDaysAgo: String)
 
     @Query("SELECT * FROM fitness_data WHERE date = :time LIMIT 1")

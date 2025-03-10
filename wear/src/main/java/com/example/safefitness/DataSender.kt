@@ -60,31 +60,27 @@ class DataSender(context: Context) {
             if (unsyncedData.isNotEmpty()) {
                 val batchSize = 300
                 val chunks = unsyncedData.chunked(batchSize)
-
                 for (chunk in chunks) {
                     val jsonArray = JSONArray()
                     for (data in chunk) {
                         val jsonObject = JSONObject()
+                        jsonObject.put("entryId", data.id)
                         jsonObject.put("date", data.date)
                         jsonObject.put("steps", data.steps)
                         jsonObject.put("heartRate", data.heartRate)
                         jsonArray.put(jsonObject)
                     }
-
                     val timestamp = System.currentTimeMillis()
                     val batchEntity = SentBatchEntity(
                         timestamp = timestamp,
                         jsonData = jsonArray.toString(),
                         isConfirmed = false
                     )
-
                     val batchId = withContext(Dispatchers.IO) {
                         sentBatchDao.insertSentBatch(batchEntity).toInt()
                     }
-
                     sendBatchToPhone(batchEntity.copy(id = batchId))
                 }
-
                 lastSendTime = System.currentTimeMillis()
             } else {
                 Log.d("DataSender", "No unsynced data to send")
@@ -100,7 +96,6 @@ class DataSender(context: Context) {
             dataMap.putInt("batchId", batch.id)
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest()
-
         dataClient.putDataItem(putDataReq)
             .addOnSuccessListener {
                 Log.d("DataSender", "Batch ${batch.id} sent to phone")
@@ -113,8 +108,7 @@ class DataSender(context: Context) {
     private suspend fun getConnectedNodes(): List<Node> {
         return withContext(Dispatchers.IO) {
             try {
-                val result = Tasks.await(nodeClient.connectedNodes, 5, TimeUnit.SECONDS)
-                result
+                Tasks.await(nodeClient.connectedNodes, 5, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 Log.e("DataSender", "Error checking connected nodes: ${e.message}", e)
                 emptyList<Node>()

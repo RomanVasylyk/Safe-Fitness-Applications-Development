@@ -31,25 +31,13 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
                             if (batch != null) {
                                 val jsonArray = JSONArray(batch.jsonData)
                                 val idsToMarkSynced = mutableListOf<Int>()
-
                                 for (i in 0 until jsonArray.length()) {
                                     val jsonObject = jsonArray.getJSONObject(i)
-                                    val date = jsonObject.getString("date")
-                                    val steps = jsonObject.optInt("steps", -1).takeIf { it >= 0 }
-                                    val heartRate = jsonObject.optDouble("heartRate", -1.0).takeIf { it >= 0 }?.toFloat()
-
-                                    val entries = fitnessDao.getEntriesByDate(date)
-                                    if (entries.isNotEmpty()) {
-                                        entries.forEach { entry ->
-                                            val entryMatches = (steps == null || entry.steps == steps) &&
-                                                    (heartRate == null || entry.heartRate == heartRate)
-                                            if (entryMatches) {
-                                                idsToMarkSynced.add(entry.id)
-                                            }
-                                        }
+                                    val entryId = jsonObject.optInt("entryId", -1)
+                                    if (entryId != -1) {
+                                        idsToMarkSynced.add(entryId)
                                     }
                                 }
-
                                 if (idsToMarkSynced.isNotEmpty()) {
                                     fitnessDao.markDataAsSynced(idsToMarkSynced)
                                     Log.d("WatchDataListener", "Marked ${idsToMarkSynced.size} records as synced.")

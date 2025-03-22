@@ -46,6 +46,7 @@ dependencies {
     implementation 'androidx.room:room-common:2.5.2'
     implementation 'androidx.activity:activity:1.9.3'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
     def room_version = "2.5.2"
 
     implementation "androidx.room:room-runtime:$room_version"

@@ -21,6 +21,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
 import com.example.safefitness.data.DataHandler
 import com.example.safefitness.data.FitnessDatabase
@@ -29,6 +30,7 @@ import com.example.safefitness.data.WearDataListener
 import com.example.safefitness.ui.graph.FullScreenGraphActivity
 import com.example.safefitness.ui.main.MainViewModel
 import com.example.safefitness.ui.main.MainViewModelFactory
+import com.example.safefitness.ui.onboarding.OnboardingActivity
 import com.example.safefitness.utils.chart.GraphManager
 import com.google.android.gms.wearable.Wearable
 import com.google.android.material.appbar.MaterialToolbar
@@ -62,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.BLUETOOTH_SCAN
     )
-
     private val REQUEST_PERMISSIONS_CODE = 123
     private val REQUEST_ENABLE_BT = 456
 
@@ -75,6 +76,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+
+        val prefsOnboarding = getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
+        if (prefsOnboarding.getBoolean("isFirstLaunch", true)) {
+            val intent = Intent(this, OnboardingActivity::class.java)
+            ContextCompat.startActivity(this, intent, null)
+            finish()
+            return
+        }
+
         loadLanguageFromPrefs()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -115,7 +126,6 @@ class MainActivity : AppCompatActivity() {
         val toRequest = REQUIRED_PERMISSIONS.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
-
         if (toRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), REQUEST_PERMISSIONS_CODE)
         } else {
@@ -126,7 +136,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkBluetooth() {
         val adapter = BluetoothAdapter.getDefaultAdapter()
-
         if (adapter != null && !adapter.isEnabled) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
@@ -183,7 +192,6 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         })
-
         mainViewModel.aggregatedHeartRate.observe(this, Observer {
             graphManager.updateGraph(
                 heartRateGraph,
@@ -194,32 +202,27 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         })
-
         mainViewModel.totalSteps.observe(this, Observer {
             val str = getString(R.string.total_steps, it)
             totalStepsText.text = str
             updateGoalProgress(it)
         })
-
         mainViewModel.lastHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.last_heart_rate, it.toInt().toString())
             } else getString(R.string.last_heart_rate, "N/A")
             lastHeartRateText.text = str
         })
-
         mainViewModel.avgHeartRate.observe(this, Observer {
             val str = getString(R.string.avg_heart_rate, it.toInt().toString())
             avgHeartRateText.text = str
         })
-
         mainViewModel.minHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.min_heart_rate, it.toInt().toString())
             } else getString(R.string.min_heart_rate, "N/A")
             minHeartRateText.text = str
         })
-
         mainViewModel.maxHeartRate.observe(this, Observer {
             val str = if (it != null) {
                 getString(R.string.max_heart_rate, it.toInt().toString())

@@ -43,4 +43,8 @@
     <string name="language_canceled">Language selection canceled</string>
 
     <string name="heart_rate_label">Heart Rate</string>
+
+    <string name="onboarding_info">This app requires a companion Wear OS app on your watch. Make sure your watch is connected via the Wear OS app on your phone to synchronize data properly.</string>
+    <string name="onboarding_button">Got it</string>
+    <string name="onboarding_title">Welcome to Safe Fitness</string>
 </resources>

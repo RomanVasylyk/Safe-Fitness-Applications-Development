@@ -14,16 +14,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SafeFitness"
         tools:ignore="GoogleAppIndexingWarning">
-
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.Light.NoActionBar"/>
         <activity
             android:name=".ui.graph.FullScreenGraphActivity"
-            android:theme="@style/Theme.SafeFitness"
-            android:exported="false"
             android:configChanges="orientation|screenSize"
-            android:screenOrientation="unspecified"/>
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.SafeFitness" />
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.SafeFitness.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

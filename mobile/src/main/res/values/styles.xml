@@ -6,4 +6,9 @@
         <item name="colorSecondary">@color/secondaryColor</item>
         <item name="android:colorBackground">@color/backgroundColor</item>
     </style>
+    <style name="Theme.SafeFitness.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimationDuration">1500</item>
+        <item name="android:windowSplashScreenBackground">@color/white</item>
+    </style>
 </resources>

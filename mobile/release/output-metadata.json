@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.connecttophone",
+  "applicationId": "com.example.safefitness",
   "variantName": "release",
   "elements": [
     {
@@ -13,7 +13,7 @@
       "attributes": [],
       "versionCode": 1,
       "versionName": "1.0",
-      "outputFile": "wear-release.apk"
+      "outputFile": "mobile-release.apk"
     }
   ],
   "elementType": "File"

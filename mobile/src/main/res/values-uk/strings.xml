@@ -43,6 +43,7 @@
     <string name="language_canceled">Вибір мови скасовано</string>
 
     <string name="heart_rate_label">Пульс</string>
+    <string name="export_data">Експорт даних</string>
 
     <string name="onboarding_info">Цей додаток потребує супутній додаток Wear OS на вашому годиннику. Переконайтеся, що ваш годинник підключений через програму Wear OS на телефоні, щоб належним чином синхронізувати дані.</string>
     <string name="onboarding_button">Зрозумів</string>

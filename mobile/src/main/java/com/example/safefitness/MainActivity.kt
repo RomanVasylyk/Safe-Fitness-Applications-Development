@@ -23,6 +23,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.data.DataHandler
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.FitnessRepository
@@ -31,10 +32,12 @@ import com.example.safefitness.ui.graph.FullScreenGraphActivity
 import com.example.safefitness.ui.main.MainViewModel
 import com.example.safefitness.ui.main.MainViewModelFactory
 import com.example.safefitness.ui.onboarding.OnboardingActivity
+import com.example.safefitness.utils.DataExporter
 import com.example.safefitness.utils.chart.GraphManager
 import com.google.android.gms.wearable.Wearable
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import kotlinx.coroutines.launch
 import lecho.lib.hellocharts.view.LineChartView
 import java.util.Locale
 
@@ -275,6 +278,21 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.popup_set_language -> {
                     showLanguageDialog()
+                    true
+                }
+                R.id.popup_export_data -> {
+                    lifecycleScope.launch {
+                        try {
+                            val file = DataExporter.exportData(this@MainActivity)
+                            DataExporter.shareFile(this@MainActivity, file)
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Export error: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                     true
                 }
                 else -> false

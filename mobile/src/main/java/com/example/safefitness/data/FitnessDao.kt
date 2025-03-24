@@ -59,4 +59,7 @@ interface FitnessDao {
     )
 """)
     suspend fun removeDuplicates()
+
+    @Query("SELECT * FROM fitness_data ORDER BY id ASC")
+    suspend fun getAllData(): List<FitnessEntity>
 }

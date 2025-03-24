@@ -43,6 +43,7 @@
     <string name="language_canceled">Výber jazyka bol zrušený</string>
 
     <string name="heart_rate_label">Tep</string>
+    <string name="export_data">Export údajov</string>
 
     <string name="onboarding_info">Táto aplikácia vyžaduje sprievodnú aplikáciu Wear OS na vašich hodinkách. Uistite sa, že sú vaše hodinky pripojené cez aplikáciu Wear OS na telefóne, aby sa údaje správne synchronizovali.</string>
     <string name="onboarding_button">Rozumiem</string>

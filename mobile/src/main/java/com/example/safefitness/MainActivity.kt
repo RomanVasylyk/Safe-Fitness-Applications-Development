@@ -65,13 +65,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dailyGoalProgress: LinearProgressIndicator
     private lateinit var loadingOverlay: View
     private lateinit var statusTextView: TextView
-
     private lateinit var wearDataListener: WearDataListener
     private val graphManager = GraphManager()
     private var lastPacketTimestamp = 0L
     private val PACKET_TIMEOUT_MS = 10000L
     private val checkSyncHandler = Handler(Looper.getMainLooper())
-
     private val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.BLUETOOTH_SCAN
@@ -165,7 +163,6 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), REQUEST_PERMISSIONS_CODE)
         } else {
             checkBluetooth()
-            showLoading(getString(R.string.loading_connecting))
             updateData()
         }
     }
@@ -174,6 +171,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = BluetoothAdapter.getDefaultAdapter()
         if (adapter != null) {
             if (!adapter.isEnabled) {
+                showLoading(getString(R.string.loading_connecting))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
                         != PackageManager.PERMISSION_GRANTED
@@ -211,12 +209,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun checkSynchronization() {
+        val diff = System.currentTimeMillis() - lastPacketTimestamp
+        android.util.Log.d("SyncCheck", "Time since last packet: $diff ms")
         if (allLargePacketsReceived()) {
             hideLoading()
         } else {
             checkSyncHandler.postDelayed({ checkSynchronization() }, 1000)
         }
     }
+
 
     fun showLoading(text: String) {
         loadingOverlay.visibility = View.VISIBLE

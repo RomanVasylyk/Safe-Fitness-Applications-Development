@@ -4,14 +4,14 @@ import android.content.Context
 import android.util.Log
 import com.example.safefitness.data.FitnessDatabase
 import com.example.safefitness.data.SentBatchEntity
+import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import com.google.android.gms.tasks.Tasks
 import java.util.concurrent.TimeUnit
 
 class DataSender(context: Context) {
@@ -20,43 +20,30 @@ class DataSender(context: Context) {
     private val fitnessDao = FitnessDatabase.getDatabase(context).fitnessDao()
     private val sentBatchDao = FitnessDatabase.getDatabase(context).sentBatchDao()
 
-    private var lastSendTime: Long = 0
     private val sendMutex = Mutex()
+
+    private var lastSendTime: Long = 0
+    private val SEND_INTERVAL_MS = 5000L
+    private var skipWait = false
+    private var immediateMode = false
 
     suspend fun sendUnsyncedDataToPhone() {
         sendMutex.withLock {
-            val currentTime = System.currentTimeMillis()
-
-            if (currentTime - lastSendTime < 10000) {
-                Log.d("DataSender", "Skipping data send: waiting 10 seconds")
+            val now = System.currentTimeMillis()
+            if (!immediateMode && !skipWait && now - lastSendTime < SEND_INTERVAL_MS) {
+                Log.d("DataSender", "Skipping data send: waiting $SEND_INTERVAL_MS ms")
                 return
             }
-
-            val connectedNodes = withContext(Dispatchers.IO) {
-                getConnectedNodes()
-            }
+            val connectedNodes = withContext(Dispatchers.IO) { getConnectedNodes() }
             if (connectedNodes.isEmpty()) {
                 Log.d("DataSender", "No connected nodes. Skipping data send.")
                 return
             }
 
-            val unconfirmedBatches = withContext(Dispatchers.IO) {
-                sentBatchDao.getUnconfirmedBatches()
-            }
-
-            if (unconfirmedBatches.isNotEmpty()) {
-                val firstUnconfirmed = unconfirmedBatches.first()
-                Log.d("DataSender", "Resending first unconfirmed batch (ID: ${firstUnconfirmed.id}). Others will wait until confirmation.")
-                sendBatchToPhone(firstUnconfirmed)
-
-                lastSendTime = System.currentTimeMillis()
-                return
-            }
-
+            skipWait = false
             val unsyncedData = withContext(Dispatchers.IO) {
                 fitnessDao.getUnsyncedData()
             }
-
             if (unsyncedData.isNotEmpty()) {
                 val batchSize = 300
                 val chunks = unsyncedData.chunked(batchSize)
@@ -111,7 +98,7 @@ class DataSender(context: Context) {
                 Tasks.await(nodeClient.connectedNodes, 5, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 Log.e("DataSender", "Error checking connected nodes: ${e.message}", e)
-                emptyList<Node>()
+                emptyList()
             }
         }
     }

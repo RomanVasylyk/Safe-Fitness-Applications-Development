@@ -2,6 +2,7 @@ package com.example.safefitness.data
 
 import android.content.Context
 import android.util.Log
+import com.example.safefitness.MainActivity
 import com.google.android.gms.wearable.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,7 +11,8 @@ import kotlinx.coroutines.launch
 class WearDataListener(
     private val dataHandler: DataHandler,
     private val onDataUpdated: () -> Unit,
-    private val context: Context
+    private val context: Context,
+    private val mainActivity: MainActivity
 ) : DataClient.OnDataChangedListener {
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -19,6 +21,7 @@ class WearDataListener(
                 if (event.type == DataEvent.TYPE_CHANGED &&
                     event.dataItem.uri.path?.startsWith("/fitness_data_batch_") == true
                 ) {
+                    mainActivity.onDataPacketReceived()
                     val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
                     val jsonData = dataMapItem.dataMap.getString("fitnessData")
                     val batchId = dataMapItem.dataMap.getInt("batchId", -1)

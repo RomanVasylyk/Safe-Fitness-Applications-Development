@@ -8,7 +8,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -19,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -59,9 +63,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var maxHeartRateText: TextView
     private lateinit var dailyGoalTitle: TextView
     private lateinit var dailyGoalProgress: LinearProgressIndicator
+    private lateinit var loadingOverlay: View
+    private lateinit var statusTextView: TextView
 
     private lateinit var wearDataListener: WearDataListener
     private val graphManager = GraphManager()
+    private var lastPacketTimestamp = 0L
+    private val PACKET_TIMEOUT_MS = 10000L
+    private val checkSyncHandler = Handler(Looper.getMainLooper())
 
     private val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.BLUETOOTH_CONNECT,
@@ -100,7 +109,12 @@ class MainActivity : AppCompatActivity() {
 
         if (!isGoalSet()) saveGoal(DEFAULT_GOAL)
 
-        wearDataListener = WearDataListener(dataHandler, { updateData() }, this)
+        wearDataListener = WearDataListener(
+            dataHandler,
+            { updateData() },
+            this,
+            mainActivity = this
+        )
         Wearable.getDataClient(this).addListener(wearDataListener)
 
         observeViewModel()
@@ -125,6 +139,24 @@ class MainActivity : AppCompatActivity() {
         resources.updateConfiguration(config, resources.displayMetrics)
     }
 
+    private fun initViews() {
+        stepsGraph = findViewById(R.id.stepsGraph)
+        heartRateGraph = findViewById(R.id.heartRateGraph)
+        totalStepsText = findViewById(R.id.totalStepsText)
+        lastHeartRateText = findViewById(R.id.lastHeartRateText)
+        avgHeartRateText = findViewById(R.id.avgHeartRateText)
+        minHeartRateText = findViewById(R.id.minHeartRateText)
+        maxHeartRateText = findViewById(R.id.maxHeartRateText)
+        dailyGoalTitle = findViewById(R.id.dailyGoalTitle)
+        dailyGoalProgress = findViewById(R.id.dailyGoalProgress)
+
+        val rootLayout = findViewById<ConstraintLayout>(R.id.mainConstraintLayout)
+        loadingOverlay = LayoutInflater.from(this).inflate(R.layout.loading_overlay, rootLayout, false)
+        rootLayout.addView(loadingOverlay)
+        loadingOverlay.visibility = View.GONE
+        statusTextView = loadingOverlay.findViewById(R.id.statusTextView)
+    }
+
     private fun requestPermissionsIfNeeded() {
         val toRequest = REQUIRED_PERMISSIONS.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -133,28 +165,66 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, toRequest.toTypedArray(), REQUEST_PERMISSIONS_CODE)
         } else {
             checkBluetooth()
+            showLoading(getString(R.string.loading_connecting))
             updateData()
         }
     }
 
     private fun checkBluetooth() {
         val adapter = BluetoothAdapter.getDefaultAdapter()
-        if (adapter != null && !adapter.isEnabled) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                    != PackageManager.PERMISSION_GRANTED
-                ) {
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                        REQUEST_PERMISSIONS_CODE
-                    )
-                    return
+        if (adapter != null) {
+            if (!adapter.isEnabled) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                        != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        ActivityCompat.requestPermissions(
+                            this,
+                            arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                            REQUEST_PERMISSIONS_CODE
+                        )
+                        return
+                    }
                 }
+                val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                startActivityForResult(intent, REQUEST_ENABLE_BT)
+            } else {
+                onBluetoothConnected()
             }
-            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(intent, REQUEST_ENABLE_BT)
+        } else {
+            hideLoading()
         }
+    }
+
+    fun onBluetoothConnected() {
+        lastPacketTimestamp = System.currentTimeMillis()
+        showLoading(getString(R.string.loading_syncing))
+        checkSynchronization()
+    }
+
+    fun allLargePacketsReceived(): Boolean {
+        return (System.currentTimeMillis() - lastPacketTimestamp) > PACKET_TIMEOUT_MS
+    }
+
+    fun onDataPacketReceived() {
+        lastPacketTimestamp = System.currentTimeMillis()
+    }
+
+    fun checkSynchronization() {
+        if (allLargePacketsReceived()) {
+            hideLoading()
+        } else {
+            checkSyncHandler.postDelayed({ checkSynchronization() }, 1000)
+        }
+    }
+
+    fun showLoading(text: String) {
+        loadingOverlay.visibility = View.VISIBLE
+        statusTextView.text = text
+    }
+
+    fun hideLoading() {
+        loadingOverlay.visibility = View.GONE
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {
@@ -168,20 +238,14 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_ENABLE_BT) {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+            if (adapter != null && adapter.isEnabled) {
+                onBluetoothConnected()
+            } else {
+                hideLoading()
+            }
             updateData()
         }
-    }
-
-    private fun initViews() {
-        stepsGraph = findViewById(R.id.stepsGraph)
-        heartRateGraph = findViewById(R.id.heartRateGraph)
-        totalStepsText = findViewById(R.id.totalStepsText)
-        lastHeartRateText = findViewById(R.id.lastHeartRateText)
-        avgHeartRateText = findViewById(R.id.avgHeartRateText)
-        minHeartRateText = findViewById(R.id.minHeartRateText)
-        maxHeartRateText = findViewById(R.id.maxHeartRateText)
-        dailyGoalTitle = findViewById(R.id.dailyGoalTitle)
-        dailyGoalProgress = findViewById(R.id.dailyGoalProgress)
     }
 
     private fun observeViewModel() {

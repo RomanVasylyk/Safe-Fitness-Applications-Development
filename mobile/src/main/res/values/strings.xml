@@ -41,7 +41,8 @@
     <string name="lang_ukrainian">Ukrainian</string>
     <string name="language_saved">Language saved: %1$s</string>
     <string name="language_canceled">Language selection canceled</string>
-
+    <string name="loading_connecting">Connecting to watch</string>
+    <string name="loading_syncing">Synchronization</string>
     <string name="heart_rate_label">Heart Rate</string>
     <string name="export_data">Export Data</string>
 

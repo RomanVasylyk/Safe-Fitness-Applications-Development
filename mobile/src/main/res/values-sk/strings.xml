@@ -41,7 +41,8 @@
     <string name="lang_ukrainian">Ukrajinčina</string>
     <string name="language_saved">Jazyk uložený: %1$s</string>
     <string name="language_canceled">Výber jazyka bol zrušený</string>
-
+    <string name="loading_connecting">Pripájanie na hodinky</string>
+    <string name="loading_syncing">Synchronizácia</string>
     <string name="heart_rate_label">Tep</string>
     <string name="export_data">Export údajov</string>
 

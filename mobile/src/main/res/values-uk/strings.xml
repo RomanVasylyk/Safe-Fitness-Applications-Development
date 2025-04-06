@@ -41,7 +41,8 @@
     <string name="lang_ukrainian">Українська</string>
     <string name="language_saved">Мову збережено: %1$s</string>
     <string name="language_canceled">Вибір мови скасовано</string>
-
+    <string name="loading_connecting">Підключення до годинника</string>
+    <string name="loading_syncing">Синхронізація</string>
     <string name="heart_rate_label">Пульс</string>
     <string name="export_data">Експорт даних</string>
 

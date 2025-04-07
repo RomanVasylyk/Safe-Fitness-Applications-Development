@@ -46,7 +46,15 @@
     <string name="heart_rate_label">Пульс</string>
     <string name="export_data">Експорт даних</string>
 
-    <string name="onboarding_info">Цей додаток потребує супутній додаток Wear OS на вашому годиннику. Переконайтеся, що ваш годинник підключений через програму Wear OS на телефоні, щоб належним чином синхронізувати дані.</string>
+    <string name="onboarding_info_paragraph1">
+    Цей додаток потребує супутній додаток Wear OS на вашому годиннику. Переконайтеся, що ваш годинник підключений через офіційний додаток Wear OS на телефоні, щоб належним чином синхронізувати дані.
+    </string>
+    <string name="onboarding_info_paragraph2">
+    Завантажте офіційний додаток виробника годинника на телефон, прив’яжіть годинник до телефону, а потім встановіть додаток Safe Fitness на годинник. Готово – збирайте дані, і вони автоматично передаватимуться на телефон через Bluetooth, коли програма відкрита.
+    </string>
+    <string name="onboarding_info_paragraph3">
+    Зверніть увагу, що цей додаток працює лише з годинниками на Wear OS.
+    </string>
     <string name="onboarding_button">Зрозумів</string>
     <string name="onboarding_title">Ласкаво просимо до Safe Fitness</string>
 </resources>

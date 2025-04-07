@@ -46,7 +46,15 @@
     <string name="heart_rate_label">Heart Rate</string>
     <string name="export_data">Export Data</string>
 
-    <string name="onboarding_info">This app requires a companion Wear OS app on your watch. Make sure your watch is connected via the Wear OS app on your phone to synchronize data properly.</string>
+    <string name="onboarding_info_paragraph1">
+    This app requires a companion Wear OS app on your watch. Make sure your watch is connected via the official Wear OS app on your phone to properly synchronize data.
+    </string>
+    <string name="onboarding_info_paragraph2">
+    Download the official watch manufacturer’s app on your phone, pair the watch to the phone, then install the Safe Fitness app on your watch. All set – collect data, and it will automatically transfer to your phone via Bluetooth when the app is open.
+    </string>
+    <string name="onboarding_info_paragraph3">
+    Please note that this app only works with watches running Wear OS.
+    </string>
     <string name="onboarding_button">Got it</string>
     <string name="onboarding_title">Welcome to Safe Fitness</string>
 </resources>

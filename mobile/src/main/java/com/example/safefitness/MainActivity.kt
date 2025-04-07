@@ -123,13 +123,20 @@ class MainActivity : AppCompatActivity() {
         Wearable.getDataClient(this).addListener(wearDataListener)
 
         observeViewModel()
-
-        if (!skipSyncOnCreate) {
-            requestPermissionsIfNeeded()
+        if (savedInstanceState != null) {
+            lastPacketTimestamp = savedInstanceState.getLong("lastPacketTimestamp", 0)
+            val wasSyncing = savedInstanceState.getBoolean("isSyncing", false)
+            if (wasSyncing && !allLargePacketsReceived()) {
+                showLoading(getString(R.string.loading_syncing))
+                checkSynchronization()
+            }
         } else {
-            skipSyncOnCreate = false
+            if (!skipSyncOnCreate) {
+                requestPermissionsIfNeeded()
+            } else {
+                skipSyncOnCreate = false
+            }
         }
-
         stepsGraph.setOnClickListener { FullScreenGraphActivity.start(this, "steps") }
         heartRateGraph.setOnClickListener { FullScreenGraphActivity.start(this, "heartRate") }
     }
@@ -237,6 +244,12 @@ class MainActivity : AppCompatActivity() {
 
     fun hideLoading() {
         loadingOverlay.visibility = View.GONE
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putLong("lastPacketTimestamp", lastPacketTimestamp)
+        outState.putBoolean("isSyncing", loadingOverlay.visibility == View.VISIBLE)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, results: IntArray) {

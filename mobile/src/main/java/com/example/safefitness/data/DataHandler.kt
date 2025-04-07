@@ -46,18 +46,18 @@ class DataHandler(val fitnessDao: FitnessDao) {
 
     private fun aggregateHeartRateBy5Minutes(data: List<Pair<String, Number>>): List<Pair<String, Number>> {
         val aggregatedData = mutableMapOf<String, MutableList<Float>>()
-
         data.forEach { (time, value) ->
+            val parts = time.split(":")
+            if (parts.size < 2) return@forEach
+            val hour = parts[0]
+            val minutes = parts[1].toIntOrNull() ?: return@forEach
             val heartRate = value.toFloat()
             if (heartRate > 0) {
-                val hour = time.split(":")[0]
-                val minutes = time.split(":")[1].toInt()
                 val roundedMinutes = (minutes / 5) * 5
                 val intervalKey = "$hour:${if (roundedMinutes < 10) "0$roundedMinutes" else roundedMinutes}"
                 aggregatedData.getOrPut(intervalKey) { mutableListOf() }.add(heartRate)
             }
         }
-
         return aggregatedData.mapNotNull { (interval, values) ->
             if (values.isNotEmpty()) {
                 interval to values.average().toFloat()

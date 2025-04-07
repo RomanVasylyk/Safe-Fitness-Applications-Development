@@ -21,6 +21,7 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
@@ -67,13 +68,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusTextView: TextView
     private lateinit var wearDataListener: WearDataListener
     private val graphManager = GraphManager()
+
     private var lastPacketTimestamp = 0L
-    private val PACKET_TIMEOUT_MS = 10000L
+    private val PACKET_TIMEOUT_MS = 5000L
     private val checkSyncHandler = Handler(Looper.getMainLooper())
+
     private val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.BLUETOOTH_SCAN
     )
+
     private val REQUEST_PERMISSIONS_CODE = 123
     private val REQUEST_ENABLE_BT = 456
 
@@ -83,6 +87,9 @@ class MainActivity : AppCompatActivity() {
         private const val DEFAULT_GOAL = 10000
         private const val KEY_LANG = "lang"
         private const val DEFAULT_LANG = "en"
+
+        @VisibleForTesting
+        var skipSyncOnCreate = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,7 +123,12 @@ class MainActivity : AppCompatActivity() {
         Wearable.getDataClient(this).addListener(wearDataListener)
 
         observeViewModel()
-        requestPermissionsIfNeeded()
+
+        if (!skipSyncOnCreate) {
+            requestPermissionsIfNeeded()
+        } else {
+            skipSyncOnCreate = false
+        }
 
         stepsGraph.setOnClickListener { FullScreenGraphActivity.start(this, "steps") }
         heartRateGraph.setOnClickListener { FullScreenGraphActivity.start(this, "heartRate") }
@@ -217,7 +229,6 @@ class MainActivity : AppCompatActivity() {
             checkSyncHandler.postDelayed({ checkSynchronization() }, 1000)
         }
     }
-
 
     fun showLoading(text: String) {
         loadingOverlay.visibility = View.VISIBLE
@@ -429,6 +440,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveLanguage(languageCode: String) {
+        skipSyncOnCreate = true
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_LANG, languageCode).apply()
         Toast.makeText(this, getString(R.string.language_saved, languageCode), Toast.LENGTH_SHORT).show()

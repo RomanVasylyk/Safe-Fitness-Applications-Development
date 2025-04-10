@@ -8,8 +8,8 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.safefitness.R
-import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.data.FitnessRepository
+import com.example.safefitness.data.local.FitnessDatabase
+import com.example.safefitness.data.repository.FitnessRepository
 import com.example.safefitness.utils.aggregation.AggregationPeriod
 import com.example.safefitness.utils.chart.ColumnChartHelper
 import com.example.safefitness.utils.aggregation.GraphDataProcessor

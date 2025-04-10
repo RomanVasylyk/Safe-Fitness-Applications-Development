@@ -1,8 +1,10 @@
-package com.example.safefitness.data
+package com.example.safefitness.data.repository
 
+import com.example.safefitness.data.local.FitnessDao
+import com.example.safefitness.data.local.FitnessEntity
 import org.json.JSONArray
 
-class DataHandler(val fitnessDao: FitnessDao) {
+class DataHandler(private val fitnessDao: FitnessDao) {
 
     suspend fun saveData(jsonData: String) {
         val jsonArray = JSONArray(jsonData)
@@ -20,8 +22,12 @@ class DataHandler(val fitnessDao: FitnessDao) {
     }
 
     suspend fun getDailyAggregatedData(currentDate: String): Pair<List<Pair<String, Number>>, List<Pair<String, Number>>> {
-        val stepsList = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.steps?.let { steps -> it.date to steps as Number } }
-        val heartRateList = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull { it.heartRate?.let { heartRate -> it.date to heartRate as Number } }
+        val stepsList = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull {
+            it.steps?.let { s -> it.date to s as Number }
+        }
+        val heartRateList = fitnessDao.getDataForCurrentDay(currentDate).mapNotNull {
+            it.heartRate?.let { hr -> it.date to hr as Number }
+        }
         return Pair(aggregateDataByHour(stepsList), aggregateHeartRateBy5Minutes(heartRateList))
     }
 
@@ -59,11 +65,8 @@ class DataHandler(val fitnessDao: FitnessDao) {
             }
         }
         return aggregatedData.mapNotNull { (interval, values) ->
-            if (values.isNotEmpty()) {
-                interval to values.average().toFloat()
-            } else {
-                null
-            }
+            if (values.isNotEmpty()) interval to values.average().toFloat()
+            else null
         }.sortedBy { it.first }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.safefitness.data
+package com.example.safefitness.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -13,7 +13,7 @@ interface FitnessDao {
 
     @Query("DELETE FROM fitness_data")
     suspend fun clearDatabase()
-    
+
     @Query("SELECT * FROM fitness_data WHERE date(date) LIKE :currentDate || '%'")
     suspend fun getDataForCurrentDay(currentDate: String): List<FitnessEntity>
 
@@ -57,7 +57,7 @@ interface FitnessDao {
         FROM fitness_data
         GROUP BY date, steps, heartRate
     )
-""")
+    """)
     suspend fun removeDuplicates()
 
     @Query("SELECT * FROM fitness_data ORDER BY id ASC")

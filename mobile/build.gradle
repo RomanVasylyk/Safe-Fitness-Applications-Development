@@ -35,39 +35,54 @@ android {
 }
 
 dependencies {
+    // Lifecycle ViewModel with Kotlin extensions – enables you to use ViewModel with Kotlin, coroutines and LiveData.
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2"
+
+    // Kotlinx Coroutines Play Services – adds support for coroutines with Google Play Services Tasks.
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4'
+
+    // Room Common – base classes for Room (usually used internally).
     implementation 'androidx.room:room-common:2.5.2'
+
+    // AndroidX Activity – provides modern Activity APIs and features.
     implementation 'androidx.activity:activity:1.9.3'
+
+    // ConstraintLayout – a flexible layout manager that allows for complex layouts.
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
+
+    // Core SplashScreen – provides splash screen support on Android 12+.
     implementation 'androidx.core:core-splashscreen:1.0.1'
+
     def room_version = "2.5.2"
 
+    // Room Runtime – the primary library for Room (handles DAO, Entities, and Database).
     implementation "androidx.room:room-runtime:$room_version"
+    // KSP (Kotlin Symbol Processing) for Room – used for annotation processing.
     ksp "androidx.room:room-compiler:$room_version"
+    // Room KTX – adds Kotlin coroutine support for Room operations.
     implementation "androidx.room:room-ktx:$room_version"
 
-    // HelloCharts - Library for charts (e.g., line, bar, pie)
+    // HelloCharts – a library for displaying various types of charts (line, column, pie, etc.).
     implementation 'com.github.lecho:hellocharts-library:1.5.8@aar'
 
-    // AndroidX Core - Provides Kotlin extensions for Android framework APIs
+    // Core KTX – provides Kotlin extensions for core Android framework APIs.
     implementation 'androidx.core:core-ktx:1.9.0'
 
-    // AppCompat - Backward compatibility for modern Android features
+    // AppCompat – provides backward compatibility for modern Android features.
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
-    // Material Design - Components and themes for modern UIs
+    // Material Components – for Material Design UI components and themes.
     implementation 'com.google.android.material:material:1.11.0'
 
-    // Google Play Services Wearable - API for communication between Wear OS and paired devices
+    // Google Play Services Wearable – API for communication between Wear OS and the paired device.
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
 
-    // Wear App - Links the main app with the Wear OS module
+    // WearApp – reference to the Wear OS module (if in a multi-module project).
     wearApp project(":wear")
 
-    // Kotlin Coroutines - Core library for managing asynchronous programming
+    // Kotlin Coroutines Core – fundamental library for asynchronous programming.
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
 
-    // Kotlin Coroutines for Android - Android-specific coroutine support (e.g., MainLooper)
+    // Kotlin Coroutines Android – provides support for Dispatchers.Main and Android-specific coroutine APIs.
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
 }

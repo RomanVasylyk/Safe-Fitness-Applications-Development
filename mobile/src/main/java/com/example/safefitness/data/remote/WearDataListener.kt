@@ -1,9 +1,15 @@
-package com.example.safefitness.data
+package com.example.safefitness.data.remote
 
 import android.content.Context
 import android.util.Log
-import com.example.safefitness.MainActivity
-import com.google.android.gms.wearable.*
+import com.example.safefitness.ui.main.MainActivity
+import com.example.safefitness.data.repository.DataHandler
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataEvent
+import com.google.android.gms.wearable.DataEventBuffer
+import com.google.android.gms.wearable.DataMapItem
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,7 +24,8 @@ class WearDataListener(
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.use { buffer ->
             for (event in buffer) {
-                if (event.type == DataEvent.TYPE_CHANGED &&
+                if (
+                    event.type == DataEvent.TYPE_CHANGED &&
                     event.dataItem.uri.path?.startsWith("/fitness_data_batch_") == true
                 ) {
                     mainActivity.onDataPacketReceived()

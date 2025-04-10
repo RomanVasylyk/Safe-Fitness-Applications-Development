@@ -1,4 +1,4 @@
-package com.example.safefitness
+package com.example.safefitness.ui.main
 
 import android.Manifest
 import android.app.AlertDialog
@@ -29,13 +29,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import com.example.safefitness.data.DataHandler
-import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.data.FitnessRepository
-import com.example.safefitness.data.WearDataListener
+import com.example.safefitness.R
+import com.example.safefitness.data.local.FitnessDatabase
+import com.example.safefitness.data.remote.WearDataListener
+import com.example.safefitness.data.repository.DataHandler
+import com.example.safefitness.data.repository.FitnessRepository
 import com.example.safefitness.ui.graph.FullScreenGraphActivity
-import com.example.safefitness.ui.main.MainViewModel
-import com.example.safefitness.ui.main.MainViewModelFactory
 import com.example.safefitness.ui.onboarding.OnboardingActivity
 import com.example.safefitness.utils.DataExporter
 import com.example.safefitness.utils.chart.GraphManager
@@ -66,7 +65,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dailyGoalProgress: LinearProgressIndicator
     private lateinit var loadingOverlay: View
     private lateinit var statusTextView: TextView
+
     private lateinit var wearDataListener: WearDataListener
+
     private val graphManager = GraphManager()
 
     private var lastPacketTimestamp = 0L
@@ -123,6 +124,7 @@ class MainActivity : AppCompatActivity() {
         Wearable.getDataClient(this).addListener(wearDataListener)
 
         observeViewModel()
+
         if (savedInstanceState != null) {
             lastPacketTimestamp = savedInstanceState.getLong("lastPacketTimestamp", 0)
             val wasSyncing = savedInstanceState.getBoolean("isSyncing", false)
@@ -137,8 +139,13 @@ class MainActivity : AppCompatActivity() {
                 skipSyncOnCreate = false
             }
         }
-        stepsGraph.setOnClickListener { FullScreenGraphActivity.start(this, "steps") }
-        heartRateGraph.setOnClickListener { FullScreenGraphActivity.start(this, "heartRate") }
+
+        stepsGraph.setOnClickListener {
+            FullScreenGraphActivity.start(this, "steps")
+        }
+        heartRateGraph.setOnClickListener {
+            FullScreenGraphActivity.start(this, "heartRate")
+        }
     }
 
     private fun loadLanguageFromPrefs() {
@@ -228,8 +235,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun checkSynchronization() {
-        val diff = System.currentTimeMillis() - lastPacketTimestamp
-        android.util.Log.d("SyncCheck", "Time since last packet: $diff ms")
         if (allLargePacketsReceived()) {
             hideLoading()
         } else {
@@ -294,30 +299,30 @@ class MainActivity : AppCompatActivity() {
                 this
             )
         })
-        mainViewModel.totalSteps.observe(this, Observer {
-            val str = getString(R.string.total_steps, it)
+        mainViewModel.totalSteps.observe(this, Observer { steps ->
+            val str = getString(R.string.total_steps, steps)
             totalStepsText.text = str
-            updateGoalProgress(it)
+            updateGoalProgress(steps)
         })
-        mainViewModel.lastHeartRate.observe(this, Observer {
-            val str = if (it != null) {
-                getString(R.string.last_heart_rate, it.toInt().toString())
+        mainViewModel.lastHeartRate.observe(this, Observer { hr ->
+            val str = if (hr != null) {
+                getString(R.string.last_heart_rate, hr.toInt().toString())
             } else getString(R.string.last_heart_rate, "N/A")
             lastHeartRateText.text = str
         })
-        mainViewModel.avgHeartRate.observe(this, Observer {
-            val str = getString(R.string.avg_heart_rate, it.toInt().toString())
+        mainViewModel.avgHeartRate.observe(this, Observer { hr ->
+            val str = getString(R.string.avg_heart_rate, hr.toInt().toString())
             avgHeartRateText.text = str
         })
-        mainViewModel.minHeartRate.observe(this, Observer {
-            val str = if (it != null) {
-                getString(R.string.min_heart_rate, it.toInt().toString())
+        mainViewModel.minHeartRate.observe(this, Observer { hr ->
+            val str = if (hr != null) {
+                getString(R.string.min_heart_rate, hr.toInt().toString())
             } else getString(R.string.min_heart_rate, "N/A")
             minHeartRateText.text = str
         })
-        mainViewModel.maxHeartRate.observe(this, Observer {
-            val str = if (it != null) {
-                getString(R.string.max_heart_rate, it.toInt().toString())
+        mainViewModel.maxHeartRate.observe(this, Observer { hr ->
+            val str = if (hr != null) {
+                getString(R.string.max_heart_rate, hr.toInt().toString())
             } else getString(R.string.max_heart_rate, "N/A")
             maxHeartRateText.text = str
         })
@@ -400,7 +405,7 @@ class MainActivity : AppCompatActivity() {
         numberPicker.displayedValues = goals.map { it.toString() }.toTypedArray()
         numberPicker.value = currentGoalIndex
 
-        val builder = AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(getString(R.string.goal_dialog_title))
             .setView(dialogView)
             .setPositiveButton(getString(R.string.goal_dialog_positive)) { dialog, _ ->
@@ -417,7 +422,8 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton(getString(R.string.goal_dialog_negative)) { dialog, _ ->
                 dialog.dismiss()
             }
-        builder.create().show()
+            .create()
+            .show()
     }
 
     private fun showLanguageDialog() {

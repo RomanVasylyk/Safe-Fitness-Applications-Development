@@ -33,25 +33,35 @@ android {
 }
 
 dependencies {
+    // Kotlin Coroutines (Play Services integration)
+    // Enables using coroutines with Google Play Services APIs (e.g., Tasks).
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4'
+
+    // Room Common – base classes for Room (usually not used directly).
     implementation 'androidx.room:room-common:2.5.2'
+
+    // Version variable for Room
     def room_version = "2.5.2"
 
+    // Room Runtime – main library for Room (DAO, Entities, Database).
     implementation "androidx.room:room-runtime:$room_version"
+    // KSP (Kotlin Symbol Processing) for Room – annotation processing.
     ksp "androidx.room:room-compiler:$room_version"
+    // Room KTX – adds coroutine support for Room queries.
     implementation "androidx.room:room-ktx:$room_version"
-    // AndroidX Core - Provides Kotlin extensions for Android framework APIs
+
+    // AndroidX Core KTX – Kotlin extensions for base Android APIs.
     implementation 'androidx.core:core-ktx:1.9.0'
 
-    // Google Play Services Wearable - API for communication between Wear OS and paired devices
+    // Google Play Services Wearable – APIs for communication between Wear OS and a paired device.
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
 
-    // AndroidX Wear - Wearable UI components and utilities
+    // AndroidX Wear – basic components and utilities for Wearable UI.
     implementation 'androidx.wear:wear:1.2.0'
 
-    // Kotlin Coroutines - Core library for managing asynchronous programming
+    // Kotlin Coroutines – core library for asynchronous programming.
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0"
 
-    // Kotlin Coroutines for Android - Android-specific coroutine support (e.g., MainLooper)
+    // Kotlin Coroutines for Android – provides Dispatchers.Main and Android-specific coroutine APIs.
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
 }

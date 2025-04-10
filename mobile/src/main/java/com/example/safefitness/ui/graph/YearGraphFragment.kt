@@ -8,8 +8,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.example.safefitness.R
-import com.example.safefitness.data.FitnessDatabase
-import com.example.safefitness.data.FitnessRepository
+import com.example.safefitness.data.local.FitnessDatabase
+import com.example.safefitness.data.repository.FitnessRepository
 import com.example.safefitness.ui.adapters.UniversalGraphPagerAdapter
 import com.example.safefitness.utils.date.DateUtils
 import kotlinx.coroutines.Dispatchers

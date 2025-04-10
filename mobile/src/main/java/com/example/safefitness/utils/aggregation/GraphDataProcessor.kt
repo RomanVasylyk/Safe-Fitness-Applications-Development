@@ -2,8 +2,8 @@ package com.example.safefitness.utils.aggregation
 
 import android.content.Context
 import com.example.safefitness.R
-import com.example.safefitness.data.FitnessEntity
-import com.example.safefitness.data.FitnessRepository
+import com.example.safefitness.data.local.FitnessEntity
+import com.example.safefitness.data.repository.FitnessRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat

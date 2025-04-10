@@ -2,9 +2,9 @@ package com.example.safefitness.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.safefitness.data.DataHandler
-import com.example.safefitness.data.FitnessDao
-import com.example.safefitness.data.FitnessRepository
+import com.example.safefitness.data.local.FitnessDao
+import com.example.safefitness.data.repository.DataHandler
+import com.example.safefitness.data.repository.FitnessRepository
 
 class MainViewModelFactory(
     private val repository: FitnessRepository,

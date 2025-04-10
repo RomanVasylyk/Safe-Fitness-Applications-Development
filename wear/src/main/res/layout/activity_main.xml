@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:padding="@dimen/box_inset_layout_padding"
-    tools:context=".MainActivity"
+    tools:context=".presentation.MainActivity"
     tools:deviceIds="wear">
 
     <LinearLayout

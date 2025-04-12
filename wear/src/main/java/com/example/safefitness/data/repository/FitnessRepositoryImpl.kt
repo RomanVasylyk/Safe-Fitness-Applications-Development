@@ -15,6 +15,12 @@ class FitnessRepositoryImpl(
     private val wearDataSender: WearDataSender
 ) : FitnessRepository {
 
+    @Volatile
+    private var phoneResponding = false
+    private var lastSendTimeMillis = 0L
+    private val lock = Any()
+    private val chunkSize = 300
+
     override suspend fun insertOrUpdateData(entity: FitnessEntity) {
         withContext(Dispatchers.IO) {
             fitnessDao.insertOrUpdateEntry(entity)
@@ -41,30 +47,51 @@ class FitnessRepositoryImpl(
         fitnessDao.markDataAsSynced(ids)
     }
 
-    override suspend fun syncDataWithPhone() {
-        val connectedNodes = wearDataSender.getConnectedNodes()
-        if (connectedNodes.isEmpty()) {
+    override suspend fun syncDataWithPhone() = withContext(Dispatchers.IO) {
+        val nodes = wearDataSender.getConnectedNodes()
+        if (nodes.isEmpty()) {
             Log.d("FitnessRepositoryImpl", "No connected nodes, skipping sync.")
-            return
+            return@withContext
+        }
+        val unconfirmed = sentBatchDao.getUnconfirmedBatches()
+        if (unconfirmed.isNotEmpty()) {
+            unconfirmed.forEach {
+                wearDataSender.sendBatch(it, 0)
+            }
+            return@withContext
+        }
+        val now = System.currentTimeMillis()
+        synchronized(lock) {
+            if (!phoneResponding && now - lastSendTimeMillis < 5000) {
+                Log.d("FitnessRepositoryImpl", "Phone not responding, skip new batch (cooldown)")
+                return@withContext
+            }
         }
         val unsynced = fitnessDao.getUnsyncedData()
-        if (unsynced.isNotEmpty()) {
-            val chunkSize = 300
-            val chunks = unsynced.chunked(chunkSize)
-            for ((index, chunk) in chunks.withIndex()) {
-                val json = wearDataSender.createBatchJson(chunk)
-                val timestamp = System.currentTimeMillis()
-                val batchEntity = SentBatchEntity(
-                    timestamp = timestamp,
-                    jsonData = json,
-                    isConfirmed = false
-                )
-                val batchId = sentBatchDao.insertSentBatch(batchEntity).toInt()
-                wearDataSender.sendBatch(batchEntity.copy(id = batchId), index)
-            }
-            Log.d("FitnessRepositoryImpl", "Sync triggered for ${unsynced.size} records.")
-        } else {
+        if (unsynced.isEmpty()) {
             Log.d("FitnessRepositoryImpl", "No unsynced data to send.")
+            return@withContext
         }
+        val chunks = unsynced.chunked(chunkSize)
+        for ((index, chunk) in chunks.withIndex()) {
+            val json = wearDataSender.createBatchJson(chunk)
+            val timestamp = System.currentTimeMillis()
+            val batch = SentBatchEntity(timestamp = timestamp, jsonData = json, isConfirmed = false)
+            val batchId = sentBatchDao.insertSentBatch(batch).toInt()
+            wearDataSender.sendBatch(batch.copy(id = batchId), index)
+        }
+        synchronized(lock) {
+            lastSendTimeMillis = now
+        }
+        Log.d("FitnessRepositoryImpl", "Sync triggered for ${unsynced.size} records.")
+    }
+
+    suspend fun onPhoneAcknowledgementReceived(batchId: Int, ids: List<Int>) {
+        sentBatchDao.markBatchConfirmed(batchId)
+        if (ids.isNotEmpty()) fitnessDao.markDataAsSynced(ids)
+        phoneResponding = true
+        val left = fitnessDao.getUnsyncedData()
+        if (left.isEmpty()) phoneResponding = false
+        Log.d("FitnessRepositoryImpl", "Batch $batchId confirmed, phone responding = $phoneResponding")
     }
 }

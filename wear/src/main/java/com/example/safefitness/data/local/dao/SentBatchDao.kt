@@ -20,4 +20,7 @@ interface SentBatchDao {
 
     @Query("DELETE FROM sent_batches WHERE isConfirmed = 1 AND timestamp < :olderThan")
     suspend fun deleteOldConfirmedBatches(olderThan: Long)
+
+    @Query("SELECT * FROM sent_batches WHERE isConfirmed = 0 ORDER BY timestamp ASC")
+    suspend fun getUnconfirmedBatches(): List<SentBatchEntity>
 }

@@ -2,6 +2,7 @@ package com.example.safefitness.data.remote
 
 import android.content.Context
 import android.util.Log
+import com.example.safefitness.data.local.entity.FitnessEntity
 import com.example.safefitness.data.local.entity.SentBatchEntity
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.*
@@ -26,7 +27,7 @@ class WearDataSender(context: Context) {
         }
     }
 
-    fun createBatchJson(entities: List<com.example.safefitness.data.local.entity.FitnessEntity>): String {
+    fun createBatchJson(entities: List<FitnessEntity>): String {
         val jsonArray = JSONArray()
         entities.forEach { data ->
             val obj = JSONObject()

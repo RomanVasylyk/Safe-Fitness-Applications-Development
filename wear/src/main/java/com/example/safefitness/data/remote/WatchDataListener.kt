@@ -17,6 +17,11 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
     private val db = FitnessDatabase.getInstance(context)
     private val sentBatchDao = db.sentBatchDao()
     private val fitnessDao = db.fitnessDao()
+    private val repository = com.example.safefitness.data.repository.FitnessRepositoryImpl(
+        fitnessDao,
+        sentBatchDao,
+        WearDataSender(context)
+    )
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.use { buffer ->
@@ -34,20 +39,14 @@ class WatchDataListener(private val context: Context) : DataClient.OnDataChanged
 
                             val batch = sentBatchDao.getBatchById(batchId)
                             if (batch != null) {
-                                val jsonArray = JSONArray(batch.jsonData)
-                                val idsToMarkSynced = mutableListOf<Int>()
-                                for (i in 0 until jsonArray.length()) {
-                                    val jsonObject = jsonArray.getJSONObject(i)
-                                    val entryId = jsonObject.optInt("entryId", -1)
-                                    if (entryId != -1) {
-                                        idsToMarkSynced.add(entryId)
-                                    }
+                                val arr = JSONArray(batch.jsonData)
+                                val list = mutableListOf<Int>()
+                                for (i in 0 until arr.length()) {
+                                    val o = arr.getJSONObject(i)
+                                    val e = o.optInt("entryId", -1)
+                                    if (e != -1) list.add(e)
                                 }
-                                if (idsToMarkSynced.isNotEmpty()) {
-                                    fitnessDao.markDataAsSynced(idsToMarkSynced)
-                                    Log.d("WatchDataListener",
-                                        "Marked ${idsToMarkSynced.size} records as synced.")
-                                }
+                                repository.onPhoneAcknowledgementReceived(batchId, list)
                             }
                         }
                     }
